@@ -58,16 +58,22 @@ class Interpreter {
             console.error(`[Runtime Error] ${err.message}`);
             throw err;
         }
-    }
+    const SecurityGuard = require('../security/guard');
 
-    /**
-     * Executes a single Aether primitive or stdlib call.
-     */
-    async execute(node) {
-        const { name, arguments: args } = node;
+    class Interpreter {
+    // ...
+        /**
+         * Executes a single Aether primitive or stdlib call.
+         */
+        async execute(node) {
+            const { name, arguments: args } = node;
 
-        // 1. Validation & Pre-execution Checks
-        this._validateExecution(name, args);
+            // Security check
+            SecurityGuard.validate(args, {});
+
+            // 1. Validation & Pre-execution Checks
+            this._validateExecution(name, args);
+
 
         try {
             switch (name) {

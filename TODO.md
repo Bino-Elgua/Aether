@@ -12,13 +12,14 @@
 - [x] **Quick Start** - Added `examples/quickstart.aether` and updated `README.md`.
 - [x] **Documentation** - Polished `README.md` with E2E examples.
 
-## Future Roadmap
-- [ ] **Sandbox Environment** - Secure execution for multi-agent swarms.
-- [ ] **Public Examples** - Deploy real-world examples with paying jobs.
-- [ ] **Formal Verification** - Audit for security.
-- [ ] **CLI Tool** - Complete the `aether` CLI utility.
+## Phase 6: Security & Deployment (Current Phase)
+- [x] **Security Hardening** - Integrated `SecurityGuard` for runtime input validation.
+- [x] **How Aether Works** - Added architectural documentation in `docs/HOW_AETHER_WORKS.md`.
+- [ ] **Full End-to-End Test Suite** - Implement comprehensive test suite.
+- [ ] **Security Audit** - Perform a full system security audit.
+- [ ] **First Real Deployment** - Launch to testnet with example job vertical.
 
-**Status:** Aether is now polished and production-ready for early testing.
+**Status:** Aether is undergoing final security hardening before audit.
 
 **Last Updated:** April 22, 2026
-**Current Focus:** System Auditing and Community Release
+**Current Focus:** Security Audit Preparation
