@@ -1,15 +1,5 @@
-# receipt — Cryptographic proof of action
-
-receipt {
-    type: "job_complete"
-    proof: true
-    archive: true
-}
-
-# With metadata
-receipt {
-    type: "task_complete"
-    job_id: "job-8923"
-    output_hash: "0xabc123..."
-    witness_count: 3
+primitive receipt {
+    type: string
+    proof: boolean
+    metadata?: object
 }

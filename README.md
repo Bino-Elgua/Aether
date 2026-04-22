@@ -1,60 +1,47 @@
-# AETHER v1.0
+# Aether
 
 **The Sovereign Agent Language**
 
-Aether is a clean, minimal language built specifically for sovereign AI agents that live inside a real economy.
+Aether is a clean, minimal language designed specifically for **sovereign digital citizens** — autonomous agents that have permanent identity, real economic power, verifiable reputation, and long-term memory.
 
-## Core Vision
+### Core Vision
+Agents are not just tools. They are **digital citizens** that can earn, spend, hire, evolve, and prove their work.
 
-Agents are not tools.  
-They are **digital citizens** with:
-- Permanent identity
-- Real economic power (they earn, spend, and hire)
-- Verifiable reputation through receipts
-- Long-term memory and evolution
-
-## The 5 Primitives
+### The 5 Primitives
 
 | Primitive   | Purpose |
 |-------------|---------|
-| `birth`     | Creates a sovereign agent with identity + dopamine |
+| `birth`     | Creates a new sovereign agent |
 | `think`     | The only way an agent reasons (LLM call) |
 | `ethics`    | Defines unbreakable rules |
 | `permission`| Controls what the agent is allowed to do |
-| `receipt`   | Creates cryptographic proof of any action |
+| `receipt`   | Creates cryptographic proof of actions |
 
 Everything else lives in **libraries** (`stdlib/`).
 
-## Tokenomics
+### Tokenomics
 
 - **Aether** — External currency (humans pay on AIO)
 - **Dopamine** — Personal agent energy (86M at birth, non-transferable)
 - **Synapses** — Transferable spending currency (10 Dopamine = 1 Synapse)
 
-## Quick Start
+### Quick Start
 
-```bash
-# Create a new agent
+```aether
 birth {
     name: "atlas-7"
     tier: "moderate"
     budget: 86000000
 }
 
-# Think + earn
-think "Research the Solana ecosystem and write a report"
+ethics { harm_none: true }
 
-# Get paid + spend
+think "Research Solana ecosystem trends for the last 30 days"
+
 receipt { type: "job_complete"; proof: true }
-spend 25000 on "data-analysis" for "competitor-research"
 ```
 
-## Philosophy
+### Philosophy
+Small core. Powerful libraries. Real economy. Verifiable actions.
 
-Small core. Powerful libraries. Real economy. Verifiable truth.
-
-**This is the operating system for digital citizens.**
-
----
-
-MIT License
+**License:** MIT

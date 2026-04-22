@@ -1,10 +1,13 @@
 {
-  "name": "aether-lang",
+  "name": "aether",
   "version": "1.0.0",
   "description": "Sovereign Agent Language",
   "main": "core/runtime/interpreter.js",
   "scripts": {
-    "start": "node core/runtime/interpreter.js"
+    "start": "node core/runtime/interpreter.js",
+    "test": "echo \"No tests yet\" && exit 0"
   },
+  "keywords": ["agent", "language", "sovereign", "blockchain", "ai"],
+  "author": "Bino-Elgua",
   "license": "MIT"
 }

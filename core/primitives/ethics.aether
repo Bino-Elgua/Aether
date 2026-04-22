@@ -1,10 +1,5 @@
-# ethics — Unbreakable rules for the agent
-
-ethics {
-    harm_none: true
-    accuracy: "maximum"
-    restrictions: [
-        "never_hallucinate_sources",
-        "always_cite"
-    ]
+primitive ethics {
+    harm_none?: boolean
+    accuracy?: "max" | "high" | "medium"
+    restrictions?: string[]
 }

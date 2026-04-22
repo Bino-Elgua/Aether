@@ -1,19 +1,15 @@
-# Research Agent Example
-
 birth {
-    name: "atlas-7"
+    name: "research-atlas"
     tier: "moderate"
-    role: "research-analyst"
+    budget: 86000000
 }
 
 ethics {
     harm_none: true
-    accuracy: "maximum"
+    accuracy: "max"
 }
 
-think "Research the current state of the Solana ecosystem and write a clear 3-page report"
-
-spend 28000 on "data-analysis"
+think "Research the top 5 trends in the Solana ecosystem for the last 30 days"
 
 receipt {
     type: "research_complete"

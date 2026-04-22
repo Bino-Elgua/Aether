@@ -1,15 +1,10 @@
-# metabolism — Dopamine & Synapse economy
-
-metabolism {
+library metabolism {
     birth_dopamine: 86000000
     hourly_drip: {
         calm: 200000,
         moderate: 500000,
         aggressive: 1500000
     }
-    decay_rate: 0.01          # 1% per day
-    conversion: 10            # 10 dopamine = 1 synapse
+    decay_rate: 0.01
+    conversion_rate: 10
 }
-
-# Usage
-burn 100000 for "synapses"
