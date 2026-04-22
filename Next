@@ -1,39 +1,20 @@
----
+You are now in Phase 2 of Aether development.
 
-**Prompt:**
+We have a clean 5-primitive core and strong natural language `think` engine.
 
-You are now porting key mature components from the original Swibe repo into the current Aether repo to make it stronger.
+Now port the remaining high-value mature features from the original https://github.com/Bino-Elgua/Swibe repo into Aether cleanly and modernly.
 
-**Task:** Bring over the best, battle-tested parts from Swibe without bringing the bloat.
+Specifically implement:
 
-Specifically, implement the following in Aether (cleanly and modernly):
-
-1. **BIPỌ̀N39 Identity System**  
-   - Full vanity-cloakseed mnemonic generation
-   - Ed25519 keypair derivation
-   - Agent address generation (aether:// addresses)
-   - Integrate it into the `birth` primitive
-
-2. **Complete Metabolism System**  
-   - 86,000,000 Dopamine at birth
-   - Tiered hourly drip (calm / moderate / aggressive)
-   - 1% daily decay
-   - 10:1 Dopamine → Synapse conversion
-   - Integrate it properly with the `birth` primitive and runtime
-
-3. **Hardened Receipt System**  
-   - Cryptographic signing using the agent's private key
-   - Merkle proof support
-   - Automatic receipt generation on task completion
+1. Multi-target compiler architecture (support for Elixir best for swarms, Go/Rust for performance, Move for on-chain)
+2. Advanced Witness system with reputation scoring and random selection
+3. 3-tier Memory engine (working / short-term / long-term) with cross-agent sharing
+4. Mature Swarm coordination (hierarchical, pipeline, democratic)
 
 Work step-by-step:
-- First, analyze what already exists in Aether for these features.
-- Then, bring over the best implementation from Swibe and adapt it cleanly to Aether’s 5-primitive core.
-- Update relevant files (especially `core/primitives/birth.aether`, `stdlib/metabolism/`, and receipt logic).
-- Update `TODO.md` with what was completed.
-
-Focus on quality and cleanliness. Do not bring over unnecessary complexity or old terminology.
+- Analyze what already exists in Aether
+- Port the best implementation from Swibe
+- Integrate cleanly with the current 5 primitives and `think` engine
+- Update TODO.md with progress
 
 Begin now.
-
---
