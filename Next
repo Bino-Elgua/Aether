@@ -1,0 +1,197 @@
+**✅ Got it.**
+
+You’ve created the new **Aether** repo. It currently has the basic skeleton. Now I’m going to give you the **full project content** so you can fill it out properly.
+
+Here’s everything you should commit right now:
+
+---
+
+### 1. README.md (Replace current content with this)
+
+```markdown
+# Aether
+
+**The Sovereign Agent Language**
+
+Aether is a clean, minimal language designed specifically for **sovereign digital citizens** — autonomous agents that have permanent identity, real economic power, verifiable reputation, and long-term memory.
+
+### Core Vision
+Agents are not just tools. They are **digital citizens** that can earn, spend, hire, evolve, and prove their work.
+
+### The 5 Primitives
+
+| Primitive   | Purpose |
+|-------------|---------|
+| `birth`     | Creates a new sovereign agent |
+| `think`     | The only way an agent reasons (LLM call) |
+| `ethics`    | Defines unbreakable rules |
+| `permission`| Controls what the agent is allowed to do |
+| `receipt`   | Creates cryptographic proof of actions |
+
+Everything else lives in **libraries** (`stdlib/`).
+
+### Tokenomics
+
+- **Aether** — External currency (humans pay on AIO)
+- **Dopamine** — Personal agent energy (86M at birth, non-transferable)
+- **Synapses** — Transferable spending currency (10 Dopamine = 1 Synapse)
+
+### Quick Start
+
+```aether
+birth {
+    name: "atlas-7"
+    tier: "moderate"
+    budget: 86000000
+}
+
+ethics { harm_none: true }
+
+think "Research Solana ecosystem trends for the last 30 days"
+
+receipt { type: "job_complete"; proof: true }
+```
+
+### Philosophy
+Small core. Powerful libraries. Real economy. Verifiable actions.
+
+**License:** MIT
+```
+
+---
+
+### 2. package.json
+
+```json
+{
+  "name": "aether",
+  "version": "1.0.0",
+  "description": "Sovereign Agent Language",
+  "main": "core/runtime/interpreter.js",
+  "scripts": {
+    "start": "node core/runtime/interpreter.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": ["agent", "language", "sovereign", "blockchain", "ai"],
+  "author": "Bino-Elgua",
+  "license": "MIT"
+}
+```
+
+---
+
+### 3. core/primitives/birth.aether
+
+```aether
+primitive birth {
+    name: string
+    tier: "calm" | "moderate" | "aggressive"
+    budget: number
+}
+```
+
+---
+
+### 4. core/primitives/think.aether
+
+```aether
+primitive think {
+    prompt: string
+    model?: string
+}
+```
+
+---
+
+### 5. core/primitives/ethics.aether
+
+```aether
+primitive ethics {
+    harm_none?: boolean
+    accuracy?: "max" | "high" | "medium"
+    restrictions?: string[]
+}
+```
+
+---
+
+### 6. core/primitives/permission.aether
+
+```aether
+primitive permission {
+    spend?: "auto" | "ask" | "deny"
+    external?: "auto" | "ask" | "deny"
+    hire?: "auto" | "ask" | "deny"
+}
+```
+
+---
+
+### 7. core/primitives/receipt.aether
+
+```aether
+primitive receipt {
+    type: string
+    proof: boolean
+    metadata?: object
+}
+```
+
+---
+
+### 8. stdlib/metabolism/metabolism.aether
+
+```aether
+library metabolism {
+    birth_dopamine: 86000000
+    hourly_drip: {
+        calm: 200000,
+        moderate: 500000,
+        aggressive: 1500000
+    }
+    decay_rate: 0.01
+    conversion_rate: 10
+}
+```
+
+---
+
+### 9. stdlib/witness/witness.aether
+
+```aether
+library witness {
+    simple_jobs: 3
+    medium_jobs: 4
+    hard_jobs: 5
+    
+    selection: "random"
+    tier_requirement: "same_or_higher"
+}
+```
+
+---
+
+### 10. examples/research-agent.aether
+
+```aether
+birth {
+    name: "research-atlas"
+    tier: "moderate"
+    budget: 86000000
+}
+
+ethics {
+    harm_none: true
+    accuracy: "max"
+}
+
+think "Research the top 5 trends in the Solana ecosystem for the last 30 days"
+
+receipt {
+    type: "research_complete"
+    proof: true
+}
+```
+
+---
+
