@@ -8,20 +8,23 @@
 - [x] AIO Job Loop & OpenClaw Coordination.
 
 ## Phase 5-7: Production Readiness (Completed)
-- [x] **Robust Error Handling** - Added `try-catch` blocks and input validation across `interpreter.js` and `stdlib`.
+- [x] **Robust Error Handling** - Added `try-catch` blocks and input validation.
 - [x] **Reputation System** - Implemented job-completion rewards and dissenting-vote penalties.
-- [x] **Quick Start** - Added `examples/quickstart.aether` and updated `README.md`.
 - [x] **Merkle Receipts** - Cryptographic verification for job cycles.
 
-## Phase 8: Security & Deployment (In Progress)
+## Phase 8: Security & Deployment (Completed)
 - [x] **Security Hardening** - Integrated `SecurityGuard` and created `docs/deployment/`.
 - [x] **Deployment Guide** - Added `docs/deployment/DEPLOYMENT.md`.
 - [x] **Basic Dashboard** - Initialized `dashboard/` control center.
-- [ ] **Full Testnet Deployment** - Deploy contracts and agent gateway.
+
+## Phase 9: Security Audit & Community Release (In Progress)
+- [x] **Security Audit Report** - Created `docs/SECURITY_AUDIT.md`.
+- [x] **Testnet Deployment Guide** - Created `docs/deployment/TESTNET_DEPLOY.md`.
+- [ ] **Testnet Launch** - Deploy contracts and agent gateway.
 - [ ] **Comprehensive Security Audit** - Perform full external/internal system audit.
 - [ ] **Community Release** - Final launch to community.
 
-**Status:** Aether is undergoing final security hardening.
+**Status:** Aether is undergoing final security review.
 
 **Last Updated:** April 22, 2026
-**Current Focus:** Testnet Deployment and Security Audit
+**Current Focus:** System Auditing and Testnet Launch
