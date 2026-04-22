@@ -74,6 +74,20 @@ class EscrowEngine extends EventEmitter {
     const escrow = this._getActive(escrowId);
     escrow.status = ESCROW_STATUS.RELEASED;
     escrow.resolved = Date.now();
+
+    // Payment Logic: Convert Aether amount to Dopamine endowment for the agent
+    if (this.walletRegistry) {
+      const conversionRate = 1000; // 1 Aether -> 1000 Dopamine
+      const dopamineAmount = escrow.amount * conversionRate;
+      
+      // Update agent metabolism balance directly via interpreter or shared ledger
+      // For now, we assume walletRegistry exposes a way to credit Dopamine
+      if (typeof this.walletRegistry.receive === 'function') {
+        this.walletRegistry.receive(escrow.agentId, 'TOC_D', dopamineAmount, 'job_payment');
+        console.log(`[HIRE] Escrow ${escrowId} released. Paid ${dopamineAmount} Dopamine to ${escrow.agentId}`);
+      }
+    }
+
     this.emit('release', { escrow });
     return escrow;
   }

@@ -87,6 +87,11 @@ class TokenLedger {
         const toKey = this._key(to, token);
         this._balances.set(toKey, (this._balances.get(toKey) || 0) + amount);
     }
+
+    receive(holder, token, amount, reason) {
+        this.mint(holder, token, amount);
+        console.log(`[LEDGER] Credited ${amount} ${token} to ${holder} (${reason})`);
+    }
 }
 
 class MetabolismEngine {

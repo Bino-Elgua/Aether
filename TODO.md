@@ -15,15 +15,18 @@
 - [x] **Execution Hardening** - Hardened `interpreter.js` with cryptographic signing and Merkle-ready receipt structure.
 - [x] **Dynamic Step Linking** - Support for passing results between steps (e.g., `$previous.result.content`).
 
-## Phase 2: Advanced Features & Ecosystem (Current Phase)
+## Phase 2: Advanced Features & Ecosystem (Completed)
 - [x] **Multi-target Compiler** - Support for Elixir (swarms), Go/Rust (performance), and Move (on-chain) [core/compiler/].
 - [x] **Advanced Witness System** - Integrated staking and slashing simulation into reputation logic.
 - [x] **Mature Swarm Coordination** - Hierarchical, Democratic, Competitive, and Pipeline strategies.
 - [x] **3-tier Memory sharing** - Cross-agent sharing logic in Memory engine.
-- [ ] **AIO Bridge** - Finalize the smart contract bridge in `contracts/aio-bridge.js`
-- [ ] **CLI Tool** - Create a dedicated `aether` CLI for easy execution and agent management.
 
-## Phase 3: Production Readiness
+## Phase 3: Real Economy & Marketplace Integration (In Progress)
+- [x] **AIO Job Loop** - Integrated EscrowEngine with Dopamine/Synapse metabolism system (Aether release -> Dopamine endowment).
+- [x] **OpenClaw Coordination** - Standardized agent-to-agent coordination and public job postings.
+- [x] **End-to-end Job Cycle** - Verified via `examples/stdlib-integration.aether` and full think workflows.
+- [ ] **Bridge Finalization** - Integrate actual on-chain AIO escrow logic in `contracts/aio-bridge.js`.
+- [ ] **CLI Tool** - Create a dedicated `aether` CLI for easy execution and agent management.
 - [ ] **Sandbox Environment** - Secure execution for multi-agent swarms.
 - [ ] **Public Examples** - Deploy real-world examples with paying jobs.
 - [ ] **Formal Verification** - Audit the core primitives for security and ethics adherence.
