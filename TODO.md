@@ -15,12 +15,12 @@
 - [x] **Execution Hardening** - Hardened `interpreter.js` with cryptographic signing and Merkle-ready receipt structure.
 - [x] **Dynamic Step Linking** - Support for passing results between steps (e.g., `$previous.result.content`).
 
-## Phase 2: Ecosystem Integration (Current Phase)
-- [x] **Critical stdlib Integration** - Witness, Hire, Swarm, and Memory modules fully integrated into runtime.
-- [x] **Open Call Functionality** - Agents can post public jobs for other agents to accept.
-- [x] **Fact Extraction** - Memory engine can automatically extract key facts from research or reasoning results.
+## Phase 2: Advanced Features & Ecosystem (Current Phase)
+- [x] **Multi-target Compiler** - Support for Elixir (swarms), Go/Rust (performance), and Move (on-chain) [core/compiler/].
+- [x] **Advanced Witness System** - Integrated staking and slashing simulation into reputation logic.
+- [x] **Mature Swarm Coordination** - Hierarchical, Democratic, Competitive, and Pipeline strategies.
+- [x] **3-tier Memory sharing** - Cross-agent sharing logic in Memory engine.
 - [ ] **AIO Bridge** - Finalize the smart contract bridge in `contracts/aio-bridge.js`
-- [ ] **Memory Persistence** - Ensure memory engine survives restarts with full state recovery (Basic persistence implemented, needs stress testing).
 - [ ] **CLI Tool** - Create a dedicated `aether` CLI for easy execution and agent management.
 
 ## Phase 3: Production Readiness
@@ -29,4 +29,4 @@
 - [ ] **Formal Verification** - Audit the core primitives for security and ethics adherence.
 
 **Last Updated:** April 22, 2026
-**Current Focus:** Phase 2 - AIO Bridge and CLI Tooling
+**Current Focus:** AIO Bridge and CLI Tooling

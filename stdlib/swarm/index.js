@@ -1,24 +1,35 @@
+'use strict';
+
 const crypto = require('crypto');
 const EventEmitter = require('events');
 
 const STRATEGY = Object.freeze({
-  HIERARCHICAL: 'hierarchical',
-  DEMOCRATIC: 'democratic',
-  COMPETITIVE: 'competitive',
-  PIPELINE: 'pipeline',
+  HIERARCHICAL: 'hierarchical', // Lead agent delegates to workers
+  DEMOCRATIC:   'democratic',   // All agents vote on solutions
+  COMPETITIVE:  'competitive',  // First valid result wins
+  PIPELINE:     'pipeline',     // Sequential transformations
 });
 
 class SwarmCoordinator extends EventEmitter {
-  constructor(strategy = STRATEGY.HIERARCHICAL) {
+  constructor(strategy = STRATEGY.HIERARCHICAL, interpreter = null) {
     super();
     this.strategy = strategy;
-    this.agents = new Map();
+    this.interpreter = interpreter;
+    this.agents = new Map(); // agentId -> agentDef
     this.tasks = [];
-    this.results = new Map();
+    this.results = new Map(); // taskId -> submissions[]
   }
 
   addAgent(agentId, role = 'worker', capabilities = {}) {
-    this.agents.set(agentId, { agentId, role, capabilities, joined: Date.now() });
+    const def = {
+      agentId,
+      role,
+      capabilities,
+      joined: Date.now(),
+      metrics: { tasksCompleted: 0, errors: 0 },
+      weight: role === 'lead' ? 2.0 : 1.0
+    };
+    this.agents.set(agentId, def);
     this.emit('agent_joined', { agentId, role });
   }
 
@@ -27,31 +38,49 @@ class SwarmCoordinator extends EventEmitter {
     this.emit('agent_left', { agentId });
   }
 
-  async dispatch(task) {
+  async dispatch(taskDescription) {
     const id = `task_${crypto.randomBytes(8).toString('hex')}`;
-    const record = { id, task, assigned: [], status: 'pending', created: Date.now() };
+    const record = { 
+      id, 
+      task: taskDescription, 
+      assigned: [], 
+      status: 'pending', 
+      created: Date.now(),
+      strategy: this.strategy
+    };
     this.tasks.push(record);
+
+    const agentList = Array.from(this.agents.values());
+    if (agentList.length === 0) {
+      throw new Error("No agents in swarm to dispatch task");
+    }
 
     switch (this.strategy) {
       case STRATEGY.HIERARCHICAL: {
-        const lead = [...this.agents.values()].find(a => a.role === 'lead');
-        const workers = [...this.agents.values()].filter(a => a.role === 'worker');
+        const lead = agentList.find(a => a.role === 'lead') || agentList[0];
+        const workers = agentList.filter(a => a.agentId !== lead.agentId);
+        record.lead = lead.agentId;
         record.assigned = workers.map(w => w.agentId);
-        record.lead = lead ? lead.agentId : null;
+        
+        // Simulation: Lead plans, workers execute
+        console.log(`[SWARM] Lead ${lead.agentId} delegating to ${workers.length} workers...`);
         break;
       }
       case STRATEGY.DEMOCRATIC: {
-        record.assigned = [...this.agents.keys()];
+        record.assigned = agentList.map(a => a.agentId);
+        console.log(`[SWARM] Democratic task dispatched to ${agentList.length} agents...`);
         break;
       }
       case STRATEGY.COMPETITIVE: {
-        record.assigned = [...this.agents.keys()];
+        record.assigned = agentList.map(a => a.agentId);
         record.mode = 'race';
+        console.log(`[SWARM] Competitive race started between ${agentList.length} agents...`);
         break;
       }
       case STRATEGY.PIPELINE: {
-        record.assigned = [...this.agents.keys()];
+        record.assigned = agentList.map(a => a.agentId);
         record.mode = 'sequential';
+        console.log(`[SWARM] Pipeline initialized through ${agentList.length} stages...`);
         break;
       }
     }
@@ -63,7 +92,12 @@ class SwarmCoordinator extends EventEmitter {
 
   submitResult(taskId, agentId, result) {
     if (!this.results.has(taskId)) this.results.set(taskId, []);
-    this.results.get(taskId).push({ agentId, result, timestamp: Date.now() });
+    const submissions = this.results.get(taskId);
+    submissions.push({ agentId, result, timestamp: Date.now() });
+    
+    const agent = this.agents.get(agentId);
+    if (agent) agent.metrics.tasksCompleted++;
+
     this.emit('result', { taskId, agentId });
   }
 
@@ -72,13 +106,19 @@ class SwarmCoordinator extends EventEmitter {
     const task = this.tasks.find(t => t.id === taskId);
     if (task) task.status = 'resolved';
 
+    if (submissions.length === 0) return { error: "No results submitted" };
+
     switch (this.strategy) {
       case STRATEGY.COMPETITIVE:
-        return submissions[0] || null; // first wins
+        // First one to submit wins (naive race)
+        return submissions[0];
       case STRATEGY.DEMOCRATIC:
-        return { votes: submissions, consensus: submissions.length > 0 };
+        // Majority/weighted consensus simulation
+        const consensus = submissions.length >= Math.ceil(this.agents.size / 2);
+        return { consensus, votes: submissions.length, total: this.agents.size };
       case STRATEGY.PIPELINE:
-        return submissions[submissions.length - 1] || null; // last in chain
+        // The last result is the final product
+        return submissions[submissions.length - 1];
       default:
         return { submissions };
     }

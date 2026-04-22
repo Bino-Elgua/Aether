@@ -8,6 +8,8 @@ const WITNESS_CONFIG = {
   hard: 5,
   selection: 'random',
   tierRequirement: 'same_or_higher',
+  minReputation: 50,
+  stakeRequirement: 1000, // Synapse
 };
 
 const TIER_RANK = { calm: 1, moderate: 2, aggressive: 3 };
@@ -16,17 +18,20 @@ class WitnessEngine {
   constructor() {
     this._agents = new Map();
     this._observations = [];
+    this._stakes = new Map(); // agentId -> amount
   }
 
-  registerAgent(agentId, tier, reputation) {
+  registerAgent(agentId, tier, reputation, initialStake = 0) {
     this._agents.set(agentId, {
       tier: tier || 'calm',
       reputation: reputation != null ? reputation : 100,
     });
+    this._stakes.set(agentId, initialStake);
   }
 
   unregisterAgent(agentId) {
     this._agents.delete(agentId);
+    this._stakes.delete(agentId);
   }
 
   selectWitnesses(jobDifficulty, excludeAgentId, requiredTier) {
@@ -39,6 +44,11 @@ class WitnessEngine {
     const eligible = [];
     for (const [id, agent] of this._agents) {
       if (id === excludeAgentId) continue;
+      
+      // Advanced criteria: Reputation and Stake
+      if (agent.reputation < WITNESS_CONFIG.minReputation) continue;
+      if ((this._stakes.get(id) || 0) < WITNESS_CONFIG.stakeRequirement) continue;
+
       if (
         WITNESS_CONFIG.tierRequirement === 'same_or_higher' &&
         (TIER_RANK[agent.tier] || 0) < minRank
@@ -83,17 +93,30 @@ class WitnessEngine {
     const votesAgainst = votes.length - votesFor;
     const approved = votesFor > votesAgainst;
 
-    // Reputation Impact
+    // Advanced Reputation & Staking Impact
+    const slashes = [];
     for (const vote of votes) {
       const isMajority = vote.approved === approved;
-      const impact = isMajority ? 2 : -5; // Reward consensus, penalize dissent
-      this.updateReputation(vote.witnessId, impact);
+      
+      if (isMajority) {
+        // Reward consensus
+        this.updateReputation(vote.witnessId, 5);
+        // Small Dopamine reward simulation
+      } else {
+        // Penalize dissent (Slashing simulation)
+        this.updateReputation(vote.witnessId, -15);
+        const currentStake = this._stakes.get(vote.witnessId) || 0;
+        const slashAmount = Math.floor(currentStake * 0.1); // Slash 10%
+        this._stakes.set(vote.witnessId, currentStake - slashAmount);
+        slashes.push({ agentId: vote.witnessId, amount: slashAmount, reason: 'dissent' });
+      }
     }
 
     return {
       approved,
       votes: { for: votesFor, against: votesAgainst },
       total: votes.length,
+      slashes
     };
   }
 
@@ -105,8 +128,18 @@ class WitnessEngine {
   updateReputation(agentId, delta) {
     const agent = this._agents.get(agentId);
     if (!agent) return null;
-    agent.reputation += delta;
+    agent.reputation = Math.max(0, Math.min(1000, agent.reputation + delta));
     return agent.reputation;
+  }
+
+  getStake(agentId) {
+    return this._stakes.get(agentId) || 0;
+  }
+
+  addStake(agentId, amount) {
+    const current = this._stakes.get(agentId) || 0;
+    this._stakes.set(agentId, current + amount);
+    return current + amount;
   }
 
   getHistory() {

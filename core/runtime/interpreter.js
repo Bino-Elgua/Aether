@@ -130,7 +130,7 @@ class Interpreter {
         this.agent.wallet = identity.address;
         this.agent.capabilities = deriveCapabilities(identity.oduArchetype, identity.elements);
         
-        this.witness.registerAgent(args.name, args.tier || 'moderate', 100);
+        this.witness.registerAgent(args.name, args.tier || 'moderate', 100, 5000); // 5000 Synapse initial stake
         this.evolution.register(args.name, args.tier || 'calm');
         
         const bal = this.metabolism.getBalance(args.name);
@@ -354,7 +354,7 @@ class Interpreter {
         const { action, strategy, agentCount, task, taskId, agentId, result } = args;
         console.log(`[Executing] swarm.${action}...`);
 
-        if (!this.swarm) this.swarm = new SwarmCoordinator(strategy || 'hierarchical');
+        if (!this.swarm) this.swarm = new SwarmCoordinator(strategy || 'hierarchical', this);
 
         switch (action) {
             case 'setup':
