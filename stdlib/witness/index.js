@@ -65,7 +65,16 @@ class WitnessEngine {
     return eligible.slice(0, count);
   }
 
+  rewardJobCompletion(agentId, amount) {
+    if (!agentId || amount <= 0) return;
+    this.updateReputation(agentId, Math.floor(amount / 100)); // 1 rep per 100 job value
+    console.log(`[WITNESS] Rewarded ${agentId} with reputation for job completion.`);
+  }
+
   submitValidation(witnessId, jobId, agentId, approved, notes) {
+    if (!this._agents.has(witnessId)) {
+        throw new Error(`Invalid witnessId: ${witnessId}`);
+    }
     const hash = crypto
       .createHash('sha256')
       .update(`${witnessId}:${jobId}:${agentId}:${Date.now()}`)

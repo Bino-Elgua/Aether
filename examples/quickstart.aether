@@ -1,0 +1,14 @@
+// quickstart.aether
+
+birth {
+    name: "user-agent"
+    tier: "calm"
+    budget: 1000000
+}
+
+think "Hello Aether, check my balance and tell me your current capability."
+
+receipt {
+    type: "quickstart_test"
+    proof: true
+}
