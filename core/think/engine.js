@@ -893,265 +893,42 @@ Generate the optimal execution plan.`;
     const { module, action, params } = step;
     const interp = this.interpreter;
 
-    switch (module) {
-      // ── Birth (auto-correction) ──
-      case 'birth': {
-        if (!interp) throw new Error('No interpreter reference');
-        await interp.run(`birth { name: "${params.name}", tier: "${params.tier}", budget: ${params.budget} }`);
-        console.log(`[THINK]   ✓ Agent born: ${params.name}`);
-        return { born: params.name, tier: params.tier };
+    if (!interp) throw new Error('No interpreter reference');
+
+    // Bridge Think Engine plan steps to Aether interpreter nodes
+    const node = {
+      name: module,
+      arguments: {
+        action,
+        ...params
+      }
+    };
+
+    // Special case: 'llm' module is handled by the Think Engine itself
+    if (module === 'llm') {
+      const contextParts = [];
+      if (interp.agent) {
+        contextParts.push(`Agent: ${interp.agent.name} (${interp.agent.tier})`);
+        const bal = interp.metabolism.getBalance(interp.agent.name);
+        contextParts.push(`Tokens: ${bal.dopamine.toLocaleString()} D / ${bal.synapse.toLocaleString()} S`);
       }
 
-      // ── Metabolism ──
-      case 'metabolism': {
-        if (!interp?.agent) throw new Error('No agent');
-        const agentName = interp.agent.name;
+      const taskPrompt = `Task: ${params.task}\nTopic: ${params.topic || 'general'}\n${contextParts.join('\n')}`;
+      const result = await this.llm.generate(taskPrompt, SYSTEM_PROMPT);
 
-        switch (action) {
-          case 'birth_endow': {
-            // Already done at birth — just report
-            const bal = interp.metabolism.getBalance(agentName);
-            console.log(`[THINK]   ✓ Balance: ${bal.dopamine.toLocaleString()} D / ${bal.synapse.toLocaleString()} S`);
-            return bal;
-          }
-          case 'burn': {
-            const receipt = interp.metabolism.burnForAction(agentName, params.amount || 1000, params.reason || 'think_action');
-            console.log(`[THINK]   ✓ Burned ${params.amount || 1000} Dopamine`);
-            return receipt;
-          }
-          case 'convert': {
-            const result = interp.metabolism.convertDopamineToSynapse(agentName, params.amount || 100000);
-            console.log(`[THINK]   ✓ Converted: ${result.burned} D → ${result.minted} S`);
-            return result;
-          }
-          case 'get_balance': {
-            const bal = interp.metabolism.getBalance(agentName);
-            console.log(`[THINK]   ✓ Dopamine: ${bal.dopamine.toLocaleString()} | Synapse: ${bal.synapse.toLocaleString()}`);
-            return bal;
-          }
-          case 'drip': {
-            const dripped = interp.metabolism.applyHourlyDrip(agentName, interp.agent.tier);
-            console.log(`[THINK]   ✓ Hourly drip: +${dripped.toLocaleString()} Dopamine`);
-            return { dripped };
-          }
-          case 'decay': {
-            const decayed = interp.metabolism.applyDailyDecay(agentName);
-            console.log(`[THINK]   ✓ Daily decay: -${decayed.toLocaleString()} Dopamine`);
-            return { decayed };
-          }
-          default:
-            throw new Error(`Unknown metabolism action: ${action}`);
-        }
+      if (result) {
+        console.log(`[THINK]   ✓ LLM (${result.provider}): ${result.content.slice(0, 80)}...`);
+        if (interp.memory) interp.memory.extractFacts(result.content, 'llm_reasoning');
+        return { content: result.content, receipt: result.receipt, provider: result.provider };
       }
 
-      // ── Witness ──
-      case 'witness': {
-        if (!interp?.witness) throw new Error('No witness engine');
-        switch (action) {
-          case 'select': {
-            const difficulty = params.difficulty || 'medium';
-            const agentId = interp.agent?.name;
-            const selected = interp.witness.selectWitnesses(difficulty, agentId);
-            console.log(`[THINK]   ✓ Selected ${selected.length} witnesses (${difficulty})`);
-            return { witnesses: selected, difficulty };
-          }
-          case 'validate': {
-            const record = interp.witness.submitValidation(
-              params.witnessId || 'self',
-              params.jobId || `job_${Date.now()}`,
-              interp.agent?.name,
-              params.approved !== false,
-              params.notes || '',
-            );
-            console.log(`[THINK]   ✓ Validation submitted: ${record.hash.slice(0, 12)}...`);
-            return record;
-          }
-          case 'tally': {
-            const tally = interp.witness.tallyVotes(params.jobId);
-            console.log(`[THINK]   ✓ Tally: ${tally.votes.for}/${tally.total} approved`);
-            return tally;
-          }
-          default:
-            throw new Error(`Unknown witness action: ${action}`);
-        }
-      }
-
-      // ── Identity ──
-      case 'identity': {
-        const { generateAgentIdentity } = require('../../stdlib/identity');
-        const identity = await generateAgentIdentity();
-        const name = params.name || `agent_${params.index || 0}`;
-        console.log(`[THINK]   ✓ Identity: ${name} → ${identity.address}`);
-        return { name, ...identity };
-      }
-
-      // ── Memory ──
-      case 'memory': {
-        if (!interp?.memory) throw new Error('No memory engine');
-        switch (action) {
-          case 'store':
-          case 'store_result': {
-            const key = params.key || `think:${Date.now()}`;
-            const data = params.data || previousOutputs;
-            const tier = params.tier || 'short_term';
-            interp.memory.store(key, data, tier, { importance: 0.7, source: 'think_engine' });
-
-            // Auto-extract facts if the data is a string
-            if (params.autoExtract && typeof data === 'string') {
-              interp.memory.extractFacts(data, 'think_engine');
-            }
-            console.log(`[THINK]   ✓ Stored: ${key} (${tier})`);
-            return { key, tier };
-          }
-          case 'recall': {
-            const entry = interp.memory.recall(params.key);
-            if (entry) {
-              console.log(`[THINK]   ✓ Recalled: ${params.key}`);
-              return entry;
-            }
-            console.log(`[THINK]   ○ No memory: ${params.key}`);
-            return null;
-          }
-          case 'search': {
-            const hits = interp.memory.search(params.query || '', params.max || 10);
-            console.log(`[THINK]   ✓ Memory search: ${hits.length} results`);
-            return { hits: hits.map(h => ({ key: h.key, data: h.data, importance: h.importance })) };
-          }
-          case 'forget': {
-            const forgotten = interp.memory.forget(params.key);
-            console.log(`[THINK]   ${forgotten ? '✓' : '○'} Forget: ${params.key}`);
-            return { forgotten };
-          }
-          case 'stats': {
-            const stats = interp.memory.stats();
-            console.log(`[THINK]   ✓ Memory: W=${stats.working} ST=${stats.short_term} LT=${stats.long_term}`);
-            return stats;
-          }
-          default:
-            throw new Error(`Unknown memory action: ${action}`);
-        }
-      }
-
-      // ── Hire ──
-      case 'hire': {
-        if (!interp.escrow) {
-          const { EscrowEngine } = require('../../stdlib/hire');
-          interp.escrow = new EscrowEngine(interp.ledger);
-        }
-        switch (action) {
-          case 'create_escrow': {
-            const escrow = interp.escrow.create(
-              params.clientId || 'user_default',
-              interp.agent?.name || 'agent_default',
-              params.amount || 50000,
-              params.job || 'think-engine task',
-            );
-            console.log(`[THINK]   ✓ Escrow created: ${escrow.id} (${escrow.amount} tokens)`);
-            return escrow;
-          }
-          case 'release': {
-            const released = interp.escrow.release(params.escrowId);
-            console.log(`[THINK]   ✓ Escrow released: ${released.id}`);
-            return released;
-          }
-          default:
-            throw new Error(`Unknown hire action: ${action}`);
-        }
-      }
-
-      // ── Swarm ──
-      case 'swarm': {
-        if (!interp.swarm) {
-          const { SwarmCoordinator } = require('../../stdlib/swarm');
-          interp.swarm = new SwarmCoordinator(params.strategy || 'hierarchical');
-        }
-        switch (action) {
-          case 'setup': {
-            const count = params.agentCount || 2;
-            for (let i = 0; i < count; i++) {
-              interp.swarm.addAgent(`swarm_agent_${i}`, i === 0 ? 'lead' : 'worker');
-            }
-            console.log(`[THINK]   ✓ Swarm: ${count} agents (${params.strategy || 'hierarchical'})`);
-            return { agents: count, strategy: params.strategy };
-          }
-          case 'coordinate':
-          case 'dispatch': {
-            const record = await interp.swarm.dispatch(params.task || 'think-engine task');
-            console.log(`[THINK]   ✓ Dispatched: ${record.id} → ${record.assigned.length} agents`);
-            return record;
-          }
-          default:
-            throw new Error(`Unknown swarm action: ${action}`);
-        }
-      }
-
-      // ── Evolve ──
-      case 'evolve': {
-        if (!interp?.evolution) throw new Error('No evolution engine');
-        switch (action) {
-          case 'check': {
-            const agentId = interp.agent?.name;
-            if (!agentId) throw new Error('No agent to check evolution');
-            const result = interp.evolution.checkEvolve(agentId);
-            if (result?.evolved) {
-              interp.agent.tier = result.to;
-              console.log(`[THINK]   ★ Evolved: ${result.from} → ${result.to}`);
-            } else {
-              console.log(`[THINK]   ○ Not ready to evolve (tier: ${result?.tier || 'unknown'})`);
-            }
-            return result;
-          }
-          case 'get_status': {
-            const agent = interp.evolution.getAgent(interp.agent?.name);
-            if (agent) {
-              console.log(`[THINK]   ✓ ${agent.agentId}: ${agent.tier} (rep: ${agent.reputation.toFixed(2)}, jobs: ${agent.completedJobs})`);
-            }
-            return agent;
-          }
-          default:
-            throw new Error(`Unknown evolve action: ${action}`);
-        }
-      }
-
-      // ── LLM Reasoning ──
-      case 'llm': {
-        const contextParts = [];
-        if (interp?.agent) {
-          contextParts.push(`Agent: ${interp.agent.name} (${interp.agent.tier})`);
-          const bal = interp.metabolism.getBalance(interp.agent.name);
-          contextParts.push(`Tokens: ${bal.dopamine.toLocaleString()} D / ${bal.synapse.toLocaleString()} S`);
-        }
-
-        const taskPrompt = `Task: ${params.task}\nTopic: ${params.topic || 'general'}\n${contextParts.join('\n')}`;
-        const result = await this.llm.generate(taskPrompt, SYSTEM_PROMPT);
-
-        if (result) {
-          console.log(`[THINK]   ✓ LLM (${result.provider}): ${result.content.slice(0, 80)}...`);
-          // Auto-extract facts from LLM output
-          if (interp?.memory) {
-            interp.memory.extractFacts(result.content, 'llm_reasoning');
-          }
-          return { content: result.content, receipt: result.receipt, provider: result.provider };
-        }
-
-        // Fallback: built-in reasoner
-        const reasoning = this._builtinReason(params);
-        console.log(`[THINK]   ✓ Built-in reasoner: ${reasoning.slice(0, 80)}...`);
-        return { content: reasoning, receipt: crypto.createHash('sha256').update(reasoning).digest('hex'), provider: 'builtin' };
-      }
-
-      // ── Receipt ──
-      case 'receipt': {
-        const hash = crypto.createHash('sha256')
-          .update(`${plan.id}:${JSON.stringify(previousOutputs)}:${Date.now()}`)
-          .digest('hex');
-        console.log(`[THINK]   ✓ Receipt: ${hash.slice(0, 16)}... (${params.stepCount || 0} steps sealed)`);
-        return { hash, type: params.type, steps: params.stepCount, timestamp: Date.now() };
-      }
-
-      default:
-        throw new Error(`Unknown module: ${module}`);
+      const reasoning = this._builtinReason(params);
+      console.log(`[THINK]   ✓ Built-in reasoner: ${reasoning.slice(0, 80)}...`);
+      return { content: reasoning, receipt: crypto.createHash('sha256').update(reasoning).digest('hex'), provider: 'builtin' };
     }
+
+    // Default: delegate to the hardened interpreter
+    return await interp.execute(node);
   }
 
   // ──────────────── Built-in Reasoner (no LLM fallback) ────────────────

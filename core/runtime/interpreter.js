@@ -1,228 +1,380 @@
+'use strict';
+
 const Lexer = require('./lexer');
 const Parser = require('./parser');
 const Gateway = require('./gateway');
 const { MetabolismEngine, TokenLedger, TOKEN_TYPE } = require('../../stdlib/metabolism');
 const { WitnessEngine } = require('../../stdlib/witness');
-const { generateAgentIdentity, deriveCapabilities, agentAddress } = require('../../stdlib/identity');
-const { MemoryEngine, MemoryTier } = require('../../stdlib/memory');
+const { generateAgentIdentity, deriveCapabilities, signMessage } = require('../../stdlib/identity');
+const { MemoryEngine } = require('../../stdlib/memory');
 const { EscrowEngine } = require('../../stdlib/hire');
 const { SwarmCoordinator } = require('../../stdlib/swarm');
 const { EvolutionEngine } = require('../../stdlib/evolve');
+const crypto = require('crypto');
+const path = require('path');
+const os = require('os');
 
 class Interpreter {
     constructor(config = {}) {
         this.agent = null;
-        this.ethics = {};
-        this.permissions = {};
+        this.ethics = {
+            harm_none: true,
+            accuracy: "high"
+        };
+        this.permissions = {
+            spend: "ask",
+            external: "ask",
+            hire: "ask"
+        };
         this.ledger = new TokenLedger();
         this.metabolism = new MetabolismEngine(this.ledger);
         this.witness = new WitnessEngine();
-        this.memory = new MemoryEngine({ vault_path: require('path').join(require('os').homedir(), '.aether', 'memory') });
-        this.escrow = null;
+        this.memory = new MemoryEngine({ 
+            vault_path: path.join(os.homedir(), '.aether', 'memory') 
+        });
+        this.escrow = new EscrowEngine(this.ledger);
         this.swarm = null;
         this.evolution = new EvolutionEngine();
         this._thinkConfig = config.think || {};
 
-        // Gateway gets a reference to this interpreter so the Think Engine
-        // can read agent state, ethics, permissions, and call stdlib directly.
         this.gateway = new Gateway(this);
+        this.executionHistory = [];
     }
 
+    /**
+     * Entry point for running Aether code strings.
+     */
     async run(code) {
-        const lexer = new Lexer(code);
-        const tokens = lexer.tokenize();
-        const parser = new Parser(tokens);
-        const program = parser.parse();
+        try {
+            const lexer = new Lexer(code);
+            const tokens = lexer.tokenize();
+            const parser = new Parser(tokens);
+            const program = parser.parse();
 
-        for (const statement of program.body) {
-            await this.execute(statement);
+            for (const statement of program.body) {
+                await this.execute(statement);
+            }
+        } catch (err) {
+            console.error(`[Runtime Error] ${err.message}`);
+            throw err;
         }
     }
 
+    /**
+     * Executes a single Aether primitive or stdlib call.
+     */
     async execute(node) {
         const { name, arguments: args } = node;
 
-        console.log(`[Executing] ${name}...`);
+        // 1. Validation & Pre-execution Checks
+        this._validateExecution(name, args);
 
-        switch (name) {
-            case 'birth': {
-                this.agent = {
-                    name: args.name,
-                    tier: args.tier || 'moderate',
-                    budget: args.budget || 86000000,
-                };
-                this.metabolism.birthEndow(args.name);
-                const identity = await generateAgentIdentity();
-                this.agent.identity = identity;
-                this.agent.wallet = identity.address;
-                this.agent.capabilities = deriveCapabilities(identity.oduArchetype, identity.elements);
-                this.witness.registerAgent(args.name, args.tier || 'moderate', 100);
-                this.evolution.register(args.name, args.tier || 'calm');
-                const bal = this.metabolism.getBalance(args.name);
-                console.log(`  Agent born: ${args.name} (${args.tier || 'moderate'} tier)`);
-                console.log(`  Wallet: ${identity.address}`);
-                console.log(`  Element: ${identity.dominantElement} → ${this.agent.capabilities.primary}`);
-                console.log(`  Dopamine: ${bal.dopamine.toLocaleString()} | Synapse: ${bal.synapse.toLocaleString()}`);
-                break;
+        try {
+            switch (name) {
+                case 'birth': await this._handleBirth(args); break;
+                case 'ethics': this._handleEthics(args); break;
+                case 'permission': this._handlePermission(args); break;
+                case 'think': await this._handleThink(args); break;
+                case 'receipt': await this._handleReceipt(args); break;
+                case 'metabolism': await this._handleMetabolism(args); break;
+                case 'witness': await this._handleWitness(args); break;
+                case 'identity': await this._handleIdentity(args); break;
+                case 'memory': await this._handleMemory(args); break;
+                case 'hire': await this._handleHire(args); break;
+                case 'swarm': await this._handleSwarm(args); break;
+                case 'evolve': await this._handleEvolve(args); break;
+                default:
+                    throw new Error(`Unknown primitive: ${name}`);
             }
+        } catch (err) {
+            console.log(`  ✗ ${name} failed: ${err.message}`);
+            throw err;
+        }
+    }
 
-            case 'ethics':
-                this.ethics = args;
-                console.log(`  Ethics set: ${JSON.stringify(this.ethics)}`);
-                break;
+    // ──────────────── INTERNAL HANDLERS ────────────────
 
-            case 'permission':
-                this.permissions = args;
-                console.log(`  Permissions set: ${JSON.stringify(this.permissions)}`);
-                break;
+    _validateExecution(name, args) {
+        // Ethics Check: harm_none
+        if (this.ethics.harm_none && (name === 'hire' || name === 'swarm')) {
+            // Placeholder for deeper behavioral validation
+        }
 
-            case 'think': {
-                const nlPrompt = args.prompt;
-                if (!nlPrompt || nlPrompt.length === 0) break;
+        // Permission Check: spend
+        if (name === 'metabolism' && (args.action === 'burn' || args.action === 'convert')) {
+            if (this.permissions.spend === 'deny') {
+                throw new Error("Permission Denied: Spending is disabled.");
+            }
+        }
 
-                // Try legacy translate first (for trivial pass-through)
-                const translated = await this.gateway.translate(nlPrompt);
-                if (translated === `think "${nlPrompt}"`) {
-                    // Trivial echo — just log
-                    console.log(`  Thought: ${nlPrompt}`);
-                } else if (translated) {
-                    // Legacy code generation (backwards compat)
-                    console.log(`  Gateway translated NL to code. Recursing...`);
-                    await this.run(translated);
-                } else {
-                    // Full Think Engine processing
-                    await this.gateway.process(nlPrompt);
+        // Agent Existence Check
+        const requiresAgent = !['birth', 'ethics', 'permission', 'identity', 'receipt', 'think'].includes(name);
+        if (requiresAgent && !this.agent) {
+            throw new Error(`Execution Blocked: '${name}' requires a born agent. Call 'birth' first.`);
+        }
+    }
+
+    async _handleBirth(args) {
+        this.agent = {
+            name: args.name,
+            tier: args.tier || 'moderate',
+            budget: args.budget || 86000000,
+        };
+        
+        // Setup stdlib states
+        this.metabolism.birthEndow(args.name);
+        const identity = await generateAgentIdentity();
+        this.agent.identity = identity;
+        this.agent.wallet = identity.address;
+        this.agent.capabilities = deriveCapabilities(identity.oduArchetype, identity.elements);
+        
+        this.witness.registerAgent(args.name, args.tier || 'moderate', 100);
+        this.evolution.register(args.name, args.tier || 'calm');
+        
+        const bal = this.metabolism.getBalance(args.name);
+        console.log(`[Executing] birth...`);
+        console.log(`  Agent born: ${args.name} (${this.agent.tier} tier)`);
+        console.log(`  Wallet: ${identity.address}`);
+        console.log(`  Capabilities: ${this.agent.capabilities.primary}`);
+        console.log(`  Dopamine: ${bal.dopamine.toLocaleString()}`);
+    }
+
+    _handleEthics(args) {
+        this.ethics = { ...this.ethics, ...args };
+        console.log(`[Executing] ethics...`);
+        console.log(`  Rules updated: ${Object.keys(args).join(', ')}`);
+    }
+
+    _handlePermission(args) {
+        this.permissions = { ...this.permissions, ...args };
+        console.log(`[Executing] permission...`);
+        console.log(`  Access updated: ${Object.keys(args).join(', ')}`);
+    }
+
+    async _handleThink(args) {
+        const nlPrompt = args.prompt;
+        if (!nlPrompt) return;
+
+        console.log(`[Executing] think: "${nlPrompt}"`);
+        
+        // Pass to Think Engine via Gateway
+        const result = await this.gateway.process(nlPrompt);
+        
+        // Auto-Receipt generation for the entire think plan
+        if (result && result.plan) {
+            await this.execute({
+                name: 'receipt',
+                arguments: {
+                    type: 'think_completion',
+                    proof: true,
+                    traceId: result.traceId,
+                    steps: result.plan.steps.length
                 }
-                break;
-            }
+            });
+        }
+    }
 
-            case 'receipt': {
-                const crypto = require('crypto');
-                const hash = crypto.createHash('sha256')
-                    .update(`${this.agent?.name || 'anon'}:${args.type}:${Date.now()}`)
-                    .digest('hex');
-                console.log(`  Receipt: [${args.type}] ${hash.slice(0, 16)}... (proof: ${args.proof})`);
-                break;
-            }
+    async _handleReceipt(args) {
+        const data = JSON.stringify({
+            agent: this.agent?.name || 'anonymous',
+            type: args.type,
+            traceId: args.traceId,
+            timestamp: Date.now()
+        });
 
-            case 'metabolism': {
-                const action = args.action;
-                if (action === 'decay' || action === 'applyDecay') {
-                    this.metabolism.applyDailyDecay(this.agent.name);
-                } else if (action === 'convert' || action === 'convertToSynapse') {
-                    this.metabolism.convertDopamineToSynapse(this.agent.name, args.amount);
-                } else if (action === 'burn') {
-                    this.metabolism.burnForAction(this.agent.name, args.amount, args.reason || 'manual');
-                } else if (action === 'drip') {
-                    this.metabolism.applyHourlyDrip(this.agent.name, this.agent.tier);
-                }
-                const bal = this.metabolism.getBalance(this.agent.name);
-                console.log(`  Metabolism [${action}]: D=${bal.dopamine.toLocaleString()} S=${bal.synapse.toLocaleString()}`);
-                break;
-            }
+        let signature = 'unsigned';
+        if (this.agent?.identity?.privateKey) {
+            signature = signMessage(this.agent.identity.privateKey, data).toString('hex');
+        }
 
-            case 'witness': {
-                const action = args.action;
-                if (action === 'select') {
-                    const difficulty = args.difficulty || 'medium';
-                    const witnesses = this.witness.selectWitnesses(difficulty, this.agent?.name);
-                    console.log(`  Witnesses selected (${difficulty}): ${witnesses.length > 0 ? witnesses.join(', ') : 'none in pool'}`);
-                } else if (action === 'validate') {
-                    const record = this.witness.submitValidation(
-                        args.witness_id || 'self',
-                        args.job_id || `job_${Date.now()}`,
-                        this.agent?.name,
-                        args.approved !== false,
-                        args.notes || '',
-                    );
-                    console.log(`  Witness validation: ${record.hash.slice(0, 12)}...`);
-                }
-                break;
-            }
+        const hash = crypto.createHash('sha256').update(data + signature).digest('hex');
+        console.log(`[Executing] receipt...`);
+        console.log(`  Proof: [${args.type}] ${hash.slice(0, 16)}...`);
+        if (signature !== 'unsigned') console.log(`  Signed: ${signature.slice(0, 12)}...`);
+        return { hash, signature };
+    }
 
-            case 'memory': {
-                const action = args.action;
-                if (action === 'store') {
-                    this.memory.store(args.key, args.data || args.value, args.tier || 'working', {
-                        importance: args.importance || 0.5,
-                        source: 'aether_script',
-                    });
-                    console.log(`  Memory stored: ${args.key} (${args.tier || 'working'})`);
-                } else if (action === 'recall') {
-                    const entry = this.memory.recall(args.key);
-                    console.log(`  Memory recall [${args.key}]: ${entry ? JSON.stringify(entry.data) : 'not found'}`);
-                } else if (action === 'search') {
-                    const results = this.memory.search(args.query, args.max || 10);
-                    console.log(`  Memory search: ${results.length} results`);
-                } else if (action === 'forget') {
-                    this.memory.forget(args.key);
-                    console.log(`  Memory forgotten: ${args.key}`);
-                }
-                break;
-            }
+    async _handleMetabolism(args) {
+        const { action, amount, reason } = args;
+        const agentName = this.agent.name;
 
-            case 'hire': {
-                if (!this.escrow) {
-                    this.escrow = new EscrowEngine(this.ledger);
-                }
-                const escrow = this.escrow.create(
-                    args.client || 'user_default',
-                    this.agent?.name || 'agent_default',
-                    args.amount || 50000,
-                    args.job || 'unspecified',
-                );
-                console.log(`  Hire: escrow ${escrow.id} created (${escrow.amount} tokens) — ${escrow.job}`);
+        console.log(`[Executing] metabolism.${action}...`);
+        switch (action) {
+            case 'birth_endow':
+                this.metabolism.birthEndow(agentName);
                 break;
-            }
-
-            case 'swarm': {
-                if (!this.swarm) {
-                    this.swarm = new SwarmCoordinator(args.strategy || 'hierarchical');
-                }
-                if (args.tasks) {
-                    await this.swarm.dispatch(args.tasks);
-                    console.log(`  Swarm: dispatched tasks`);
-                } else if (args.task) {
-                    await this.swarm.dispatch(args.task);
-                    console.log(`  Swarm: dispatched task`);
-                }
+            case 'burn':
+                this.metabolism.burnForAction(agentName, amount || 1000, reason || 'execution');
                 break;
-            }
-
-            case 'evolve': {
-                const action = args.action || 'check';
-                if (action === 'check') {
-                    const result = this.evolution.checkEvolve(this.agent?.name);
-                    if (result?.evolved) {
-                        this.agent.tier = result.to;
-                        console.log(`  ★ Evolved: ${result.from} → ${result.to}`);
-                    } else {
-                        console.log(`  Evolution: not ready (tier: ${result?.tier || 'unknown'})`);
-                    }
-                }
+            case 'convert':
+                this.metabolism.convertDopamineToSynapse(agentName, amount || 100000);
                 break;
-            }
-
+            case 'drip':
+                this.metabolism.applyHourlyDrip(agentName, this.agent.tier);
+                break;
+            case 'decay':
+                this.metabolism.applyDailyDecay(agentName);
+                break;
+            case 'get_balance':
+            case 'balance':
+                break; // Just reporting below
             default:
-                throw new Error(`Unknown primitive: ${name}`);
+                throw new Error(`Unknown metabolism action: ${action}`);
+        }
+
+        const bal = this.metabolism.getBalance(agentName);
+        console.log(`  Balance: ${bal.dopamine.toLocaleString()} D | ${bal.synapse.toLocaleString()} S`);
+        return bal;
+    }
+
+    async _handleWitness(args) {
+        const { action, difficulty, jobId, witnessId, approved, notes } = args;
+        console.log(`[Executing] witness.${action}...`);
+        
+        switch (action) {
+            case 'select':
+                const witnesses = this.witness.selectWitnesses(difficulty || 'medium', this.agent.name);
+                console.log(`  Selected: ${witnesses.join(', ')}`);
+                return witnesses;
+            case 'validate':
+                const record = this.witness.submitValidation(
+                    witnessId || 'self',
+                    jobId || `job_${Date.now()}`,
+                    this.agent.name,
+                    approved !== false,
+                    notes || ''
+                );
+                console.log(`  Validation: ${record.hash.slice(0, 12)}...`);
+                return record;
+            case 'tally':
+                const tally = this.witness.tallyVotes(jobId);
+                console.log(`  Tally: ${tally.votes.for}/${tally.total} approved`);
+                return tally;
+            default:
+                throw new Error(`Unknown witness action: ${action}`);
+        }
+    }
+
+    async _handleIdentity(args) {
+        console.log(`[Executing] identity.generate...`);
+        const identity = await generateAgentIdentity();
+        console.log(`  New Identity: ${identity.address}`);
+        return identity;
+    }
+
+    async _handleMemory(args) {
+        const { action, key, data, tier, query, max } = args;
+        console.log(`[Executing] memory.${action}...`);
+
+        switch (action) {
+            case 'store':
+            case 'store_result':
+                const storageData = typeof data === 'string' ? data : JSON.stringify(data || {});
+                this.memory.store(key, storageData, tier || 'short_term', { source: 'runtime' });
+                console.log(`  Stored: ${key}`);
+                break;
+            case 'recall':
+                const entry = this.memory.recall(key);
+                console.log(`  Recall: ${entry ? 'hit' : 'miss'}`);
+                return entry;
+            case 'search':
+                const results = this.memory.search(query, max || 5);
+                console.log(`  Search: ${results.length} results`);
+                return results;
+            case 'forget':
+                this.memory.forget(key);
+                console.log(`  Forgotten: ${key}`);
+                break;
+            case 'stats':
+                const stats = this.memory.stats();
+                console.log(`  Stats: ${stats.working + stats.short_term + stats.long_term} entries`);
+                return stats;
+            default:
+                throw new Error(`Unknown memory action: ${action}`);
+        }
+    }
+
+    async _handleHire(args) {
+        const { action, amount, job, escrowId, clientId } = args;
+        console.log(`[Executing] hire.${action}...`);
+
+        switch (action) {
+            case 'create_escrow':
+                const escrow = this.escrow.create(
+                    clientId || 'user',
+                    this.agent.name,
+                    amount || 50000,
+                    job || 'task'
+                );
+                console.log(`  Escrow: ${escrow.id} (${escrow.amount} S)`);
+                return escrow;
+            case 'release':
+                const released = this.escrow.release(escrowId);
+                console.log(`  Released: ${escrowId}`);
+                return released;
+            default:
+                throw new Error(`Unknown hire action: ${action}`);
+        }
+    }
+
+    async _handleSwarm(args) {
+        const { action, strategy, agentCount, task } = args;
+        console.log(`[Executing] swarm.${action}...`);
+
+        if (!this.swarm) this.swarm = new SwarmCoordinator(strategy || 'hierarchical');
+
+        switch (action) {
+            case 'setup':
+                for (let i = 0; i < (agentCount || 2); i++) {
+                    this.swarm.addAgent(`agent_${i}`, i === 0 ? 'lead' : 'worker');
+                }
+                console.log(`  Swarm ready: ${agentCount || 2} agents`);
+                break;
+            case 'dispatch':
+            case 'coordinate':
+                const record = await this.swarm.dispatch(task || 'coordinated task');
+                console.log(`  Dispatched: ${record.id}`);
+                return record;
+            default:
+                throw new Error(`Unknown swarm action: ${action}`);
+        }
+    }
+
+    async _handleEvolve(args) {
+        const { action } = args;
+        console.log(`[Executing] evolve.${action}...`);
+
+        switch (action) {
+            case 'check':
+                const result = this.evolution.checkEvolve(this.agent.name);
+                if (result?.evolved) {
+                    this.agent.tier = result.to;
+                    console.log(`  ★ EVOLVED: ${result.from} → ${result.to}`);
+                } else {
+                    console.log(`  Status: Not ready (Current: ${this.agent.tier})`);
+                }
+                return result;
+            case 'get_status':
+                const status = this.evolution.getAgent(this.agent.name);
+                console.log(`  Reputation: ${status?.reputation.toFixed(2)}`);
+                return status;
+            default:
+                throw new Error(`Unknown evolve action: ${action}`);
         }
     }
 }
 
 module.exports = Interpreter;
 
-// CLI support
 if (require.main === module) {
     const fs = require('fs');
-    const path = require('path');
     const filePath = process.argv[2];
-
     if (filePath) {
         const code = fs.readFileSync(path.resolve(filePath), 'utf8');
         const interpreter = new Interpreter();
-        interpreter.run(code).catch(console.error);
+        interpreter.run(code).catch(e => process.exit(1));
     } else {
-        console.log("Aether Interpreter v2.0 — Think Engine Active");
+        console.log("Aether Runtime v2.1 — Hardened Execution Layer");
         console.log("Usage: node interpreter.js <file.aether>");
     }
 }

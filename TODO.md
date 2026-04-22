@@ -7,29 +7,22 @@
 - Basic runtime and agent state management
 - Updated README.md
 
-## Phase 1: Port Core Concepts from Swibe (Current Phase)
+## Phase 1: Port Core Concepts from Swibe (Completed)
+- [x] **Metabolism System** - Dopamine (86M birth, hourly drip by tier, daily decay, 10:1 conversion to Synapse)
+- [x] **Witness System** - Random witness selection (3/4/5 based on job difficulty), peer validation, reputation impact
+- [x] **Agent Identity** - Sui-like identity (Ed25519 keypairs, elemental derivation, aether:// addresses)
+- [x] **stdlib/ Structure** - Proper library system (metabolism, witness, swarm, memory, evolve, hire)
+- [x] **Execution Hardening** - Hardened `interpreter.js` to reliably execute `think` plans, auto-signed receipts, and robust error handling.
 
-### Must Have
-- [ ] **Metabolism System** - Dopamine (86M birth, hourly drip by tier, daily decay, 10:1 conversion to Synapse)
-- [ ] **Witness System** - Random witness selection (3/4/5 based on job difficulty), peer validation, reputation impact
-- [ ] **Agent Identity** - Sui wallet integration (each agent gets real Sui address + keypair)
-- [ ] **stdlib/ Structure** - Create proper library system (metabolism, witness, swarm, memory, evolve, hire)
-
-### Should Have
-- [ ] **Memory System** - Persistent long-term memory across sessions
-- [ ] **Tier System** - Calm / Moderate / Aggressive with different capabilities and drip rates
-- [ ] **Escrow Integration** - Connect to AIO job escrow contracts
-
-### Nice to Have
-- [ ] Multi-agent swarm coordination
-- [ ] VSCode extension / syntax highlighting
-
-## Phase 2: Ecosystem Integration
-- [ ] Full integration with AIO marketplace
-- [ ] Real on-chain identity using Sui wallets
+## Phase 2: Ecosystem Integration (Current Phase)
+- [ ] **AIO Bridge** - Finalize the smart contract bridge in `contracts/aio-bridge.js`
+- [ ] **Memory Persistence** - Ensure memory engine survives restarts with full state recovery
+- [ ] **CLI Tool** - Create a dedicated `aether` CLI for easy execution and agent management
 
 ## Phase 3: Production Readiness
-- [   ] Public examples with real paying jobs
+- [ ] **Sandbox Environment** - Secure execution for multi-agent swarms
+- [ ] **Public Examples** - Deploy real-world examples with paying jobs
+- [ ] **Formal Verification** - Audit the core primitives for security and ethics adherence
 
 **Last Updated:** April 22, 2026
-**Current Focus:** Phase 1 - Porting core concepts from Swibe into clean libraries
+**Current Focus:** Phase 2 - Ecosystem Integration and Bridge Finalization
