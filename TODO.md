@@ -10,9 +10,9 @@
 ## Phase 1: Port Core Concepts from Swibe (Completed)
 - [x] **Metabolism System** - Dopamine (86M birth, hourly drip by tier, daily decay, 10:1 conversion to Synapse)
 - [x] **Witness System** - Random witness selection (3/4/5 based on job difficulty), peer validation, reputation impact
-- [x] **Agent Identity** - Sui-like identity (Ed25519 keypairs, elemental derivation, aether:// addresses)
+- [x] **Agent Identity** - BIPỌ̀N39 Identity System (16x16 wordlist, vanity-cloakseed mnemonics, Ed25519 keypairs, aether:// addresses)
 - [x] **stdlib/ Structure** - Proper library system (metabolism, witness, swarm, memory, evolve, hire)
-- [x] **Execution Hardening** - Hardened `interpreter.js` to reliably execute `think` plans, auto-signed receipts, and robust error handling.
+- [x] **Execution Hardening** - Hardened `interpreter.js` with cryptographic signing and Merkle-ready receipt structure.
 
 ## Phase 2: Ecosystem Integration (Current Phase)
 - [ ] **AIO Bridge** - Finalize the smart contract bridge in `contracts/aio-bridge.js`

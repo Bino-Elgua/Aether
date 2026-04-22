@@ -123,7 +123,9 @@ class Interpreter {
         
         // Setup stdlib states
         this.metabolism.birthEndow(args.name);
-        const identity = await generateAgentIdentity();
+        
+        // BIPỌ̀N39 Identity Generation
+        const identity = await generateAgentIdentity(args.passphrase || '');
         this.agent.identity = identity;
         this.agent.wallet = identity.address;
         this.agent.capabilities = deriveCapabilities(identity.oduArchetype, identity.elements);
@@ -134,9 +136,10 @@ class Interpreter {
         const bal = this.metabolism.getBalance(args.name);
         console.log(`[Executing] birth...`);
         console.log(`  Agent born: ${args.name} (${this.agent.tier} tier)`);
+        console.log(`  Mnemonic: ${identity.mnemonic}`);
         console.log(`  Wallet: ${identity.address}`);
-        console.log(`  Capabilities: ${this.agent.capabilities.primary}`);
-        console.log(`  Dopamine: ${bal.dopamine.toLocaleString()}`);
+        console.log(`  Dominant Element: ${identity.dominantElement}`);
+        console.log(`  Dopamine: ${bal.dopamine.toLocaleString()} (86M Birth Endowment)`);
     }
 
     _handleEthics(args) {
@@ -168,30 +171,43 @@ class Interpreter {
                     type: 'think_completion',
                     proof: true,
                     traceId: result.traceId,
-                    steps: result.plan.steps.length
+                    steps: result.plan.steps.length,
+                    results: result.results
                 }
             });
         }
     }
 
     async _handleReceipt(args) {
-        const data = JSON.stringify({
+        const receiptData = {
             agent: this.agent?.name || 'anonymous',
             type: args.type,
             traceId: args.traceId,
-            timestamp: Date.now()
-        });
+            timestamp: Date.now(),
+            steps: args.steps || 0,
+            merkleRoot: args.merkleRoot || crypto.randomBytes(32).toString('hex')
+        };
 
+        const dataStr = JSON.stringify(receiptData);
         let signature = 'unsigned';
+        
         if (this.agent?.identity?.privateKey) {
-            signature = signMessage(this.agent.identity.privateKey, data).toString('hex');
+            signature = signMessage(this.agent.identity.privateKey, dataStr).toString('hex');
         }
 
-        const hash = crypto.createHash('sha256').update(data + signature).digest('hex');
+        const receiptHash = crypto.createHash('sha256').update(dataStr + signature).digest('hex');
+        
         console.log(`[Executing] receipt...`);
-        console.log(`  Proof: [${args.type}] ${hash.slice(0, 16)}...`);
-        if (signature !== 'unsigned') console.log(`  Signed: ${signature.slice(0, 12)}...`);
-        return { hash, signature };
+        console.log(`  Seal: [${args.type}] ${receiptHash.slice(0, 16)}...`);
+        if (signature !== 'unsigned') {
+            console.log(`  Signed by Agent: ${this.agent.name}`);
+            console.log(`  Signature: ${signature.slice(0, 24)}...`);
+        }
+        
+        // Log receipt to history
+        this.executionHistory.push({ ...receiptData, hash: receiptHash, signature });
+        
+        return { hash: receiptHash, signature };
     }
 
     async _handleMetabolism(args) {
@@ -257,8 +273,9 @@ class Interpreter {
 
     async _handleIdentity(args) {
         console.log(`[Executing] identity.generate...`);
-        const identity = await generateAgentIdentity();
+        const identity = await generateAgentIdentity(args.passphrase || '');
         console.log(`  New Identity: ${identity.address}`);
+        console.log(`  Mnemonic: ${identity.mnemonic}`);
         return identity;
     }
 
@@ -374,7 +391,7 @@ if (require.main === module) {
         const interpreter = new Interpreter();
         interpreter.run(code).catch(e => process.exit(1));
     } else {
-        console.log("Aether Runtime v2.1 — Hardened Execution Layer");
+        console.log("Aether Runtime v2.2 — Hardened BIPỌ̀N39 Identity & Metabolism");
         console.log("Usage: node interpreter.js <file.aether>");
     }
 }

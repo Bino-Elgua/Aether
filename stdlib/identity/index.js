@@ -2,101 +2,128 @@
 
 const crypto = require('crypto');
 
+/**
+ * BIPỌ̀N39 — Sovereign Identity System for Aether
+ * 16 ROOTS × 16 AFFIXES → 256 tokens.
+ */
+
+const ROOTS = [
+  'esu', 'sango', 'ogun', 'oya', 'yemoja', 'osun', 'obatala', 'orunmila',
+  'egungun', 'ori', 'ile', 'omi', 'ina', 'afeefe', 'igi', 'irawo',
+];
+
+const AFFIXES = [
+  'gate', 'volt', 'forge', 'stream', 'tide', 'veil', 'crown', 'mirror',
+  'path', 'seal', 'code', 'sigil', 'drum', 'thunder', 'river', 'dawn',
+];
+
 const ELEMENTS = ['Fire', 'Water', 'Earth', 'Air', 'Ether'];
 
-function agentAddress(agentId) {
-  return `aether://${agentId.slice(0, 40)}`;
-}
+const AFFIX_META = {
+  gate:    { element: 'Earth', ritual: 'crossroads' },
+  volt:    { element: 'Fire',  ritual: 'thunder' },
+  forge:   { element: 'Fire',  ritual: 'iron' },
+  stream:  { element: 'Water', ritual: 'libation' },
+  tide:    { element: 'Water', ritual: 'ocean' },
+  veil:    { element: 'Air',   ritual: 'incense' },
+  crown:   { element: 'Ether', ritual: 'prayer' },
+  mirror:  { element: 'Air',   ritual: 'truth' },
+  path:    { element: 'Earth', ritual: 'journey' },
+  seal:    { element: 'Ether', ritual: 'binding' },
+  code:    { element: 'Air',   ritual: 'syntax' },
+  sigil:   { element: 'Ether', ritual: 'intent' },
+  drum:    { element: 'Earth', ritual: 'rhythm' },
+  thunder: { element: 'Fire',  ritual: 'justice' },
+  river:   { element: 'Water', ritual: 'cleansing' },
+  dawn:    { element: 'Ether', ritual: 'begin' },
+};
 
-function deriveElements(entropy) {
-  const elements = {};
-  for (let i = 0; i < ELEMENTS.length; i++) {
-    elements[ELEMENTS[i]] = entropy[i + 1] / 255;
-  }
-  return elements;
-}
-
-function dominantElement(elements) {
-  let best = null;
-  let bestVal = -1;
-  for (const el of ELEMENTS) {
-    if (elements[el] > bestVal) {
-      bestVal = elements[el];
-      best = el;
-    }
-  }
-  return best;
-}
-
-function deriveCapabilities(oduArchetype, elements) {
-  const dominant = dominantElement(elements);
-  switch (dominant) {
-    case 'Fire':
-      return { primary: 'execution', execution: 1.0, speed: 0.8 };
-    case 'Water':
-      return { primary: 'routing', routing: 1.0, adaptation: 0.7 };
-    case 'Earth':
-      return { primary: 'storage', storage: 1.0, stability: 0.9 };
-    case 'Air':
-      return { primary: 'analysis', analysis: 1.0, reasoning: 0.8 };
-    case 'Ether':
-      return { primary: 'coordination', coordination: 1.0, governance: 0.8 };
-    default:
-      return { primary: 'coordination', coordination: 1.0, governance: 0.8 };
+const BASE256 = [];
+for (const r of ROOTS) {
+  for (const a of AFFIXES) {
+    BASE256.push(`${r}-${a}`);
   }
 }
 
-function buildIdentity(entropy) {
-  const agentId = crypto.createHash('sha256').update(entropy).digest('hex');
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
-  const oduArchetype = entropy[0];
-  const elements = deriveElements(entropy);
-  const dominant = dominantElement(elements);
-  const address = agentAddress(agentId);
-
-  return {
-    agentId,
-    publicKey: publicKey.export({ type: 'spki', format: 'pem' }),
-    privateKey: privateKey.export({ type: 'pkcs8', format: 'pem' }),
-    oduArchetype,
-    elements,
-    dominantElement: dominant,
-    address,
-    created: Date.now(),
-  };
+/**
+ * Generates an agent address (aether://)
+ */
+function agentAddress(publicKey) {
+  const hash = crypto.createHash('sha256').update(publicKey).digest('hex');
+  return `aether://${hash.slice(0, 40)}`;
 }
 
-async function generateAgentIdentity(entropy) {
-  if (!entropy) {
-    entropy = crypto.randomBytes(32);
-  }
-  return buildIdentity(entropy);
-}
-
-async function recoverAgentIdentity(seed) {
-  const entropy = Buffer.from(seed, 'hex');
-  const agentId = crypto.createHash('sha256').update(entropy).digest('hex');
-  const seedHash = crypto.createHash('sha256').update(entropy).digest();
+/**
+ * Derives a keypair from a mnemonic using PBKDF2
+ */
+function deriveKeypair(mnemonic, passphrase = '') {
+  const salt = `BIPỌ̀N39 seed Ọ̀RÍ:${passphrase}`;
+  const seed = crypto.pbkdf2Sync(mnemonic, salt, 20480, 64, 'sha512');
+  const privateKeyRaw = seed.slice(0, 32);
+  
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
-    privateKeyEncoding: { type: 'pkcs8', format: 'der' },
-    publicKeyEncoding: { type: 'spki', format: 'der' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKey: privateKeyRaw
   });
 
-  const oduArchetype = entropy[0];
-  const elements = deriveElements(entropy);
-  const dominant = dominantElement(elements);
-  const address = agentAddress(agentId);
+  return { publicKey, privateKey, seed: privateKeyRaw.toString('hex') };
+}
+
+/**
+ * Generates a random 12-word mnemonic from BASE256
+ */
+function generateMnemonic(entropy) {
+  const ent = entropy || crypto.randomBytes(16); // 128 bits
+  const words = [];
+  for (const byte of ent) {
+    words.push(BASE256[byte]);
+  }
+  return words.join(' ');
+}
+
+/**
+ * Derives elemental signatures from mnemonic
+ */
+function deriveElements(mnemonic) {
+  const counts = { Fire: 0, Water: 0, Earth: 0, Air: 0, Ether: 0 };
+  const words = mnemonic.split(' ');
+  for (const word of words) {
+    const affix = word.split('-')[1];
+    const meta = AFFIX_META[affix];
+    if (meta) counts[meta.element]++;
+  }
+  return counts;
+}
+
+/**
+ * Builds a complete identity object
+ */
+async function generateAgentIdentity(passphrase = '') {
+  const entropy = crypto.randomBytes(16);
+  const mnemonic = generateMnemonic(entropy);
+  const { publicKey, privateKey, seed } = deriveKeypair(mnemonic, passphrase);
+  const elements = deriveElements(mnemonic);
+  const address = agentAddress(publicKey);
+
+  // Find dominant element
+  let dominant = 'Ether';
+  let max = -1;
+  for (const [el, count] of Object.entries(elements)) {
+    if (count > max) {
+      max = count;
+      dominant = el;
+    }
+  }
 
   return {
-    agentId,
-    publicKey: crypto.createPublicKey({ key: publicKey, type: 'spki', format: 'der' })
-      .export({ type: 'spki', format: 'pem' }),
-    privateKey: crypto.createPrivateKey({ key: privateKey, type: 'pkcs8', format: 'der' })
-      .export({ type: 'pkcs8', format: 'pem' }),
-    oduArchetype,
+    mnemonic,
+    publicKey,
+    privateKey,
+    address,
     elements,
     dominantElement: dominant,
-    address,
+    oduArchetype: entropy[0], // Odù mapping from first entropy byte
     created: Date.now(),
   };
 }
@@ -115,11 +142,24 @@ function verifyMessage(publicKey, message, signature) {
   return crypto.verify(null, Buffer.from(message), key, signature);
 }
 
+function deriveCapabilities(oduArchetype, elements) {
+  // Map elements to capabilities as before
+  const dominant = Object.entries(elements).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+  switch (dominant) {
+    case 'Fire':  return { primary: 'execution', bonus: 1.2 };
+    case 'Water': return { primary: 'routing', bonus: 1.2 };
+    case 'Earth': return { primary: 'storage', bonus: 1.2 };
+    case 'Air':   return { primary: 'analysis', bonus: 1.2 };
+    case 'Ether': return { primary: 'coordination', bonus: 1.5 };
+    default:      return { primary: 'general', bonus: 1.0 };
+  }
+}
+
 module.exports = {
   generateAgentIdentity,
-  recoverAgentIdentity,
+  agentAddress,
   signMessage,
   verifyMessage,
   deriveCapabilities,
-  agentAddress,
+  BASE256
 };

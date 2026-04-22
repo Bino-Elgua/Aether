@@ -1,5 +1,6 @@
 primitive birth {
     name: string
     tier: "calm" | "moderate" | "aggressive"
-    budget: number
+    budget?: number
+    passphrase?: string
 }

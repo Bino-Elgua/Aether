@@ -1,15 +1,27 @@
+'use strict';
+
 const crypto = require('crypto');
 
+/**
+ * Aether Metabolism System
+ * 
+ * - 86,000,000 Dopamine at birth (TOC_D)
+ * - 86,000,000 Synapse at birth (TOC_S) - Human endowment
+ * - 1% Daily Decay on Dopamine
+ * - 10:1 Dopamine -> Synapse conversion
+ * - Tiered hourly drip
+ */
+
 const TOKEN_TYPE = {
-    ASE: 'ASE',
-    TOC_D: 'TOC_D',
-    TOC_S: 'TOC_S'
+    ASE: 'ASE',      // External network token
+    TOC_D: 'TOC_D',  // Dopamine (Internal, non-transferable)
+    TOC_S: 'TOC_S'   // Synapse (Internal, transferable)
 };
 
 const TOKEN_CONFIG = {
     birth: {
-        [TOKEN_TYPE.TOC_D]: 86_000_000_000,
-        [TOKEN_TYPE.TOC_S]: 86_000_000
+        [TOKEN_TYPE.TOC_D]: 86000000,
+        [TOKEN_TYPE.TOC_S]: 86000000
     },
     dailyDecay: 0.01,
     conversionRatio: 10,
@@ -21,14 +33,11 @@ const TOKEN_CONFIG = {
     transferable: [TOKEN_TYPE.TOC_S]
 };
 
-const VALID_MINT_SOURCES = ['vm_birth', 'vm_conversion'];
-
 class TokenLedger {
     constructor() {
         this._balances = new Map();
         this._supply = { [TOKEN_TYPE.TOC_D]: 0, [TOKEN_TYPE.TOC_S]: 0 };
         this._burned = { [TOKEN_TYPE.TOC_D]: 0, [TOKEN_TYPE.TOC_S]: 0 };
-        this._burnReceipts = [];
     }
 
     _key(holder, token) {
@@ -39,65 +48,44 @@ class TokenLedger {
         return this._balances.get(this._key(holder, token)) || 0;
     }
 
-    mint(holder, token, amount, source) {
-        if (!VALID_MINT_SOURCES.includes(source)) {
-            throw new Error(`Invalid mint source: ${source}. Must be one of: ${VALID_MINT_SOURCES.join(', ')}`);
-        }
-        if (amount <= 0) {
-            throw new Error('Mint amount must be positive');
-        }
+    mint(holder, token, amount) {
+        if (amount <= 0) return;
         const key = this._key(holder, token);
         const current = this._balances.get(key) || 0;
         this._balances.set(key, current + amount);
-        this._supply[token] = (this._supply[token] || 0) + amount;
+        this._supply[token] += amount;
     }
 
-    burn(holder, token, amount, reason, receiptHash) {
-        if (amount <= 0) {
-            throw new Error('Burn amount must be positive');
-        }
+    burn(holder, token, amount, reason) {
+        if (amount <= 0) return null;
         const key = this._key(holder, token);
         const current = this._balances.get(key) || 0;
         if (current < amount) {
-            throw new Error(`Insufficient ${token} balance: has ${current}, tried to burn ${amount}`);
+            throw new Error(`Insufficient ${token} balance for burn: has ${current}, need ${amount}`);
         }
         this._balances.set(key, current - amount);
         this._supply[token] -= amount;
-        this._burned[token] = (this._burned[token] || 0) + amount;
+        this._burned[token] += amount;
 
-        if (token === TOKEN_TYPE.TOC_D) {
-            const hash = receiptHash || crypto.createHash('sha256')
-                .update(`${holder}:${amount}:${reason}:${Date.now()}`)
-                .digest('hex');
-            const receipt = { holder, token, amount, reason, hash, timestamp: Date.now() };
-            this._burnReceipts.push(receipt);
-            return receipt;
-        }
+        const hash = crypto.createHash('sha256')
+            .update(`${holder}:${amount}:${reason}:${Date.now()}`)
+            .digest('hex');
+        
+        return { holder, token, amount, reason, hash, timestamp: Date.now() };
     }
 
     transfer(from, to, token, amount) {
         if (!TOKEN_CONFIG.transferable.includes(token)) {
             throw new Error(`Token ${token} is not transferable`);
         }
-        if (amount <= 0) {
-            throw new Error('Transfer amount must be positive');
-        }
         const fromKey = this._key(from, token);
         const current = this._balances.get(fromKey) || 0;
         if (current < amount) {
-            throw new Error(`Insufficient ${token} balance: has ${current}, tried to transfer ${amount}`);
+            throw new Error(`Insufficient balance for transfer`);
         }
         this._balances.set(fromKey, current - amount);
         const toKey = this._key(to, token);
         this._balances.set(toKey, (this._balances.get(toKey) || 0) + amount);
-    }
-
-    getSupply() {
-        return { ...this._supply };
-    }
-
-    getBurned() {
-        return { ...this._burned };
     }
 }
 
@@ -107,17 +95,14 @@ class MetabolismEngine {
     }
 
     birthEndow(agentId) {
-        this.ledger.mint(agentId, TOKEN_TYPE.TOC_D, TOKEN_CONFIG.birth[TOKEN_TYPE.TOC_D], 'vm_birth');
-        this.ledger.mint(agentId, TOKEN_TYPE.TOC_S, TOKEN_CONFIG.birth[TOKEN_TYPE.TOC_S], 'vm_birth');
+        this.ledger.mint(agentId, TOKEN_TYPE.TOC_D, TOKEN_CONFIG.birth[TOKEN_TYPE.TOC_D]);
+        this.ledger.mint(agentId, TOKEN_TYPE.TOC_S, TOKEN_CONFIG.birth[TOKEN_TYPE.TOC_S]);
         return this.getBalance(agentId);
     }
 
     applyHourlyDrip(agentId, tier) {
-        const amount = TOKEN_CONFIG.hourlyDrip[tier];
-        if (amount === undefined) {
-            throw new Error(`Unknown drip tier: ${tier}. Must be one of: ${Object.keys(TOKEN_CONFIG.hourlyDrip).join(', ')}`);
-        }
-        this.ledger.mint(agentId, TOKEN_TYPE.TOC_D, amount, 'vm_conversion');
+        const amount = TOKEN_CONFIG.hourlyDrip[tier] || TOKEN_CONFIG.hourlyDrip.moderate;
+        this.ledger.mint(agentId, TOKEN_TYPE.TOC_D, amount);
         return amount;
     }
 
@@ -131,15 +116,9 @@ class MetabolismEngine {
     }
 
     convertDopamineToSynapse(agentId, dopamineAmount) {
-        if (dopamineAmount <= 0) {
-            throw new Error('Conversion amount must be positive');
-        }
         const synapseAmount = Math.floor(dopamineAmount / TOKEN_CONFIG.conversionRatio);
-        if (synapseAmount <= 0) {
-            throw new Error(`Dopamine amount ${dopamineAmount} too small for ${TOKEN_CONFIG.conversionRatio}:1 conversion`);
-        }
         this.ledger.burn(agentId, TOKEN_TYPE.TOC_D, dopamineAmount, 'conversion_to_synapse');
-        this.ledger.mint(agentId, TOKEN_TYPE.TOC_S, synapseAmount, 'vm_conversion');
+        this.ledger.mint(agentId, TOKEN_TYPE.TOC_S, synapseAmount);
         return { burned: dopamineAmount, minted: synapseAmount };
     }
 
