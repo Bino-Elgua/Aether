@@ -1,0 +1,8 @@
+# birth — Create a sovereign agent
+
+birth {
+    name: "agent-name"
+    tier: "moderate"          # calm | moderate | aggressive
+    role: "research-analyst"
+    budget: 86000000          # starting dopamine
+}

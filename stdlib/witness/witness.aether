@@ -1,0 +1,15 @@
+# witness — Random peer validation system
+
+witness {
+    job_id: "job-8923"
+    count: 3                  # 3 = simple, 4 = medium, 5 = hard
+    tier: "same"              # same | higher
+    selection: "random"
+}
+
+# Result
+witness_result {
+    approved: true
+    signatures: 3
+    score: 0.97
+}

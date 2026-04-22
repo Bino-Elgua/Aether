@@ -1,0 +1,9 @@
+# think — The only reasoning primitive (LLM call)
+
+think "Your question or task here"
+
+# Optional parameters
+think "Analyze this document" {
+    budget: 5000
+    model: "tier-2"
+}

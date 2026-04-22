@@ -1,0 +1,10 @@
+{
+  "name": "aether-lang",
+  "version": "1.0.0",
+  "description": "Sovereign Agent Language",
+  "main": "core/runtime/interpreter.js",
+  "scripts": {
+    "start": "node core/runtime/interpreter.js"
+  },
+  "license": "MIT"
+}

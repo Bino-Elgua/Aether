@@ -1,0 +1,21 @@
+# Research Agent Example
+
+birth {
+    name: "atlas-7"
+    tier: "moderate"
+    role: "research-analyst"
+}
+
+ethics {
+    harm_none: true
+    accuracy: "maximum"
+}
+
+think "Research the current state of the Solana ecosystem and write a clear 3-page report"
+
+spend 28000 on "data-analysis"
+
+receipt {
+    type: "research_complete"
+    proof: true
+}
