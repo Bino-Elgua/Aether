@@ -280,7 +280,7 @@ class Interpreter {
     }
 
     async _handleMemory(args) {
-        const { action, key, data, tier, query, max } = args;
+        const { action, key, data, tier, query, max, text, source } = args;
         console.log(`[Executing] memory.${action}...`);
 
         switch (action) {
@@ -302,6 +302,10 @@ class Interpreter {
                 this.memory.forget(key);
                 console.log(`  Forgotten: ${key}`);
                 break;
+            case 'extract_facts':
+                const facts = this.memory.extractFacts(text, source || 'runtime');
+                console.log(`  Extracted: ${facts.length} facts`);
+                return facts;
             case 'stats':
                 const stats = this.memory.stats();
                 console.log(`  Stats: ${stats.working + stats.short_term + stats.long_term} entries`);
@@ -312,7 +316,7 @@ class Interpreter {
     }
 
     async _handleHire(args) {
-        const { action, amount, job, escrowId, clientId } = args;
+        const { action, amount, job, escrowId, clientId, callId } = args;
         console.log(`[Executing] hire.${action}...`);
 
         switch (action) {
@@ -325,6 +329,18 @@ class Interpreter {
                 );
                 console.log(`  Escrow: ${escrow.id} (${escrow.amount} S)`);
                 return escrow;
+            case 'post_open_call':
+                const call = this.escrow.postOpenCall(
+                    clientId || 'user',
+                    amount || 50000,
+                    job || 'open task'
+                );
+                console.log(`  Open Call: ${call.id} posted`);
+                return call;
+            case 'accept_open_call':
+                const newEscrow = this.escrow.acceptOpenCall(callId, this.agent.name);
+                console.log(`  Accepted: ${callId} -> ${newEscrow.id}`);
+                return newEscrow;
             case 'release':
                 const released = this.escrow.release(escrowId);
                 console.log(`  Released: ${escrowId}`);
@@ -335,7 +351,7 @@ class Interpreter {
     }
 
     async _handleSwarm(args) {
-        const { action, strategy, agentCount, task } = args;
+        const { action, strategy, agentCount, task, taskId, agentId, result } = args;
         console.log(`[Executing] swarm.${action}...`);
 
         if (!this.swarm) this.swarm = new SwarmCoordinator(strategy || 'hierarchical');
@@ -352,6 +368,14 @@ class Interpreter {
                 const record = await this.swarm.dispatch(task || 'coordinated task');
                 console.log(`  Dispatched: ${record.id}`);
                 return record;
+            case 'submit_result':
+                this.swarm.submitResult(taskId, agentId || this.agent.name, result);
+                console.log(`  Submitted: ${taskId} by ${agentId || this.agent.name}`);
+                break;
+            case 'resolve':
+                const resolution = this.swarm.resolve(taskId);
+                console.log(`  Resolved: ${taskId}`);
+                return resolution;
             default:
                 throw new Error(`Unknown swarm action: ${action}`);
         }

@@ -43,7 +43,7 @@ const INTENT = Object.freeze({
 });
 
 const INTENT_PATTERNS = [
-  { intent: INTENT.HIRE,         patterns: [/\bhire\b/i, /\brecruit\b/i, /\bassign\b/i, /\bdeploy\s+agent/i, /\bget\s+(\d+\s+)?agents?\b/i, /\bspin\s+up\b/i, /\blaunch\s+(\d+\s+)?agents?\b/i] },
+  { intent: INTENT.HIRE,         patterns: [/\bhire\b/i, /\brecruit\b/i, /\bassign\b/i, /\bdeploy\s+agent/i, /\bget\s+(\d+\s+)?agents?\b/i, /\bspin\s+up\b/i, /\blaunch\s+(\d+\s+)?agents?\b/i, /\bpost\s+(a\s+)?job\b/i, /\bopen\s+call\b/i, /\bpublic\s+request\b/i] },
   { intent: INTENT.COORDINATE,   patterns: [/\bcoordinat/i, /\bswarm\b/i, /\bteam\b/i, /\bparallel\b/i, /\bpipeline\b/i, /\bsplit.*work/i, /\bdivide.*task/i, /\bwork\s+together\b/i, /\bcollaborat/i] },
   { intent: INTENT.RESEARCH,     patterns: [/\bresearch\b/i, /\bfind\b/i, /\bsearch\b/i, /\blook\s*(up|for|into)\b/i, /\binvestigat/i, /\bexplore\b/i, /\bdiscov/i, /\btrends?\b/i, /\banalyz.*market/i] },
   { intent: INTENT.BUILD,        patterns: [/\bbuild\b/i, /\bcreate\b/i, /\bgenerate\b/i, /\bimplement\b/i, /\bwrite\b/i, /\bcode\b/i, /\bdevelop\b/i, /\bconstruct\b/i, /\bdesign\b/i, /\bcraft\b/i] },
@@ -74,7 +74,7 @@ const ENTITY_PATTERNS = {
 };
 
 function extractEntities(prompt) {
-  const entities = {};
+  const entities = { raw: prompt };
   for (const [name, pattern] of Object.entries(ENTITY_PATTERNS)) {
     const match = pattern.exec(prompt);
     if (match) {
@@ -325,29 +325,38 @@ class PlanBuilder {
 
     switch (intent) {
       case INTENT.HIRE: {
-        const count = entities.count || 1;
-        const difficulty = entities.difficulty || 'medium';
-        for (let i = 0; i < count; i++) {
-          steps.push(this._step('identity', 'generate', {
-            index: i,
-            name: entities.agent_name || `agent_${i}`,
-          }, `Generate identity for agent ${i}`));
-        }
-        steps.push(this._step('metabolism', 'birth_endow', {
-          count,
-        }, `Endow ${count} agent(s) with birth tokens`));
-        if (entities.topic || entities.amount) {
-          steps.push(this._step('hire', 'create_escrow', {
-            job: entities.topic || 'assigned task',
+        const isOpenCall = ctx.entities.raw && (/\bpost\s+(a\s+)?job\b/i.test(ctx.entities.raw) || /\bopen\s+call\b/i.test(ctx.entities.raw));
+        
+        if (isOpenCall) {
+          steps.push(this._step('hire', 'post_open_call', {
+            job: entities.topic || 'public task',
             amount: entities.amount || 50000,
-            agentCount: count,
-          }, 'Create escrow for job'));
-        }
-        if (count > 1) {
-          steps.push(this._step('swarm', 'coordinate', {
-            strategy: entities.strategy || 'hierarchical',
-            agentCount: count,
-          }, `Coordinate ${count} agents (${entities.strategy || 'hierarchical'})`));
+          }, 'Post an open call for agents'));
+        } else {
+          const count = entities.count || 1;
+          const difficulty = entities.difficulty || 'medium';
+          for (let i = 0; i < count; i++) {
+            steps.push(this._step('identity', 'generate', {
+              index: i,
+              name: entities.agent_name || `agent_${i}`,
+            }, `Generate identity for agent ${i}`));
+          }
+          steps.push(this._step('metabolism', 'birth_endow', {
+            count,
+          }, `Endow ${count} agent(s) with birth tokens`));
+          if (entities.topic || entities.amount) {
+            steps.push(this._step('hire', 'create_escrow', {
+              job: entities.topic || 'assigned task',
+              amount: entities.amount || 50000,
+              agentCount: count,
+            }, 'Create escrow for job'));
+          }
+          if (count > 1) {
+            steps.push(this._step('swarm', 'coordinate', {
+              strategy: entities.strategy || 'hierarchical',
+              agentCount: count,
+            }, `Coordinate ${count} agents (${entities.strategy || 'hierarchical'})`));
+          }
         }
         break;
       }
@@ -377,6 +386,10 @@ class PlanBuilder {
           topic: entities.topic || 'requested topic',
           depth: entities.difficulty || 'medium',
         }, `Deep research: ${entities.topic || 'topic'}`));
+        steps.push(this._step('memory', 'extract_facts', {
+          source: 'research_module',
+          text: '$previous.result.content', // Directive for engine to use previous output
+        }, 'Extract key facts from research'));
         steps.push(this._step('memory', 'store', {
           key: `research:${(entities.topic || 'general').replace(/\s+/g, '_')}`,
           tier: entities.memory_tier || 'short_term',
@@ -869,7 +882,7 @@ Generate the optimal execution plan.`;
 
     for (const step of plan.steps) {
       try {
-        const result = await this._executeStep(step, plan, outputs);
+        const result = await this._executeStep(step, plan, results);
         step.status = 'completed';
         step.result = result;
         results.push({ stepId: step.id, status: 'ok', result });
@@ -889,18 +902,30 @@ Generate the optimal execution plan.`;
     return { results, stepsExecuted, stepsFailed, outputs };
   }
 
-  async _executeStep(step, plan, previousOutputs) {
+  async _executeStep(step, plan, previousResults) {
     const { module, action, params } = step;
     const interp = this.interpreter;
 
     if (!interp) throw new Error('No interpreter reference');
+
+    // Handle dynamic parameter substitution (e.g., $previous.result.content)
+    const resolvedParams = { ...params };
+    for (const [key, value] of Object.entries(resolvedParams)) {
+      if (typeof value === 'string' && value.startsWith('$previous')) {
+        // Find the result of the actually preceding step
+        const lastResultRecord = previousResults.length > 0 ? previousResults[previousResults.length - 1].result : null;
+        if (value === '$previous.result.content' && lastResultRecord?.content) {
+          resolvedParams[key] = lastResultRecord.content;
+        }
+      }
+    }
 
     // Bridge Think Engine plan steps to Aether interpreter nodes
     const node = {
       name: module,
       arguments: {
         action,
-        ...params
+        ...resolvedParams
       }
     };
 

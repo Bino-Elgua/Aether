@@ -15,6 +15,7 @@ class EscrowEngine extends EventEmitter {
     super();
     this.walletRegistry = walletRegistry;
     this.escrows = new Map();
+    this.openCalls = new Map();
     this.counter = 0;
     this.defaultTimeout = options.timeoutMs || 7 * 24 * 60 * 60 * 1000; // 7 days
     // AIO on-chain integration config
@@ -45,6 +46,28 @@ class EscrowEngine extends EventEmitter {
     this.escrows.set(id, escrow);
     this.emit('create', escrow);
     return escrow;
+  }
+
+  postOpenCall(clientId, amount, jobDescription, timeoutMs) {
+    const id = `call_${++this.counter}`;
+    const call = {
+      id,
+      clientId,
+      amount,
+      job: jobDescription,
+      created: Date.now(),
+      expiresAt: Date.now() + (timeoutMs || this.defaultTimeout),
+    };
+    this.openCalls.set(id, call);
+    this.emit('open_call', call);
+    return call;
+  }
+
+  acceptOpenCall(callId, agentId) {
+    const call = this.openCalls.get(callId);
+    if (!call) throw new Error(`Open call not found: ${callId}`);
+    this.openCalls.delete(callId);
+    return this.create(call.clientId, agentId, call.amount, call.job);
   }
 
   release(escrowId) {

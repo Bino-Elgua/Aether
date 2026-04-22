@@ -1,0 +1,28 @@
+birth {
+    name: "integration-agent"
+    tier: "moderate"
+    budget: 86000000
+}
+
+ethics {
+    harm_none: true
+}
+
+permission {
+    spend: "auto"
+    hire: "auto"
+}
+
+// 1. Test Open Call
+think "post a job to research autonomous agent ethics with a budget of 100000"
+
+// 2. Test Research with Fact Extraction
+think "research the history of the Aether language and extract key facts"
+
+// 3. Test Swarm with Resolution
+think "coordinate 2 agents to analyze recent crypto trends and resolve the results"
+
+receipt {
+    type: "integration_test"
+    proof: true
+}

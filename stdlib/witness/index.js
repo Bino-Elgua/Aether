@@ -77,11 +77,21 @@ class WitnessEngine {
 
   tallyVotes(jobId) {
     const votes = this._observations.filter((o) => o.jobId === jobId);
+    if (votes.length === 0) return { approved: false, votes: { for: 0, against: 0 }, total: 0 };
+
     const votesFor = votes.filter((v) => v.approved).length;
     const votesAgainst = votes.length - votesFor;
+    const approved = votesFor > votesAgainst;
+
+    // Reputation Impact
+    for (const vote of votes) {
+      const isMajority = vote.approved === approved;
+      const impact = isMajority ? 2 : -5; // Reward consensus, penalize dissent
+      this.updateReputation(vote.witnessId, impact);
+    }
 
     return {
-      approved: votesFor > votesAgainst,
+      approved,
       votes: { for: votesFor, against: votesAgainst },
       total: votes.length,
     };
