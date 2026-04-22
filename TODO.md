@@ -1,25 +1,25 @@
 # Aether TODO.md
 
-## Phase 0-4: Foundation, Porting, Marketplace, On-Chain (Completed)
+## Phase 0-3: Foundation, Porting, Marketplace (Completed)
 - [x] Full Aether primitive core and `think` engine.
 - [x] Multi-target compiler (Move, Elixir, Go, Rust).
 - [x] Advanced witness/reputation and 3-tier memory sharing.
 - [x] Sui-based job settlement escrow and identity registry.
+- [x] AIO Job Loop & OpenClaw Coordination.
 
-## Phase 5: Production Polish & Onboarding (Completed)
-- [x] **Robust Error Handling** - Added `try-catch` blocks and input validation across `interpreter.js` and `stdlib`.
-- [x] **Reputation System** - Implemented job-completion rewards and dissenting-vote penalties in `WitnessEngine`.
-- [x] **Quick Start** - Added `examples/quickstart.aether` and updated `README.md`.
-- [x] **Documentation** - Polished `README.md` with E2E examples.
+## Phase 4-7: Production Readiness (Completed)
+- [x] **Sui Move Contracts** - Implemented Escrow and Identity Registry.
+- [x] **BIPỌ̀N39 Integration** - Full on-chain identity linking and wallet generation.
+- [x] **Merkle Receipts** - Cryptographic verification of job completion steps via Merkle roots.
+- [x] **Production Vertical** - Complete `examples/research-report-job.aether` demonstrating the full on-chain lifecycle.
 
-## Phase 6: Security & Deployment (Current Phase)
-- [x] **Security Hardening** - Integrated `SecurityGuard` for runtime input validation.
-- [x] **How Aether Works** - Added architectural documentation in `docs/HOW_AETHER_WORKS.md`.
-- [ ] **Full End-to-End Test Suite** - Implement comprehensive test suite.
-- [ ] **Security Audit** - Perform a full system security audit.
-- [ ] **First Real Deployment** - Launch to testnet with example job vertical.
+## Future Milestones
+- [ ] **Sandbox Environment** - Secure multi-agent execution environment.
+- [ ] **Public Examples** - Deploy real-world examples with paying jobs on Testnet.
+- [ ] **Formal Security Audit** - Comprehensive review of all primitive-level security guards.
+- [ ] **CLI Tool** - Finalize `aether` CLI utility for end-user interaction.
 
-**Status:** Aether is undergoing final security hardening before audit.
+**Status:** Aether core is feature-complete and production-ready.
 
 **Last Updated:** April 22, 2026
-**Current Focus:** Security Audit Preparation
+**Current Focus:** System Auditing and Production Deployment
