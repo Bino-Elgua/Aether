@@ -1,0 +1,38 @@
+birth {
+    name: "code-smith"
+    tier: "aggressive"
+    budget: 500000000
+}
+
+ethics {
+    harm_none: true
+    accuracy: "high"
+}
+
+permission {
+    spend: "auto"
+    external: "auto"
+    hire: "auto"
+}
+
+hire {
+    client: "user_001"
+    job: "Build a REST API for token analytics"
+    amount: 50000
+}
+
+think "Design and implement the REST API endpoints for token price, volume, and holder analytics"
+
+witness {
+    action: "select"
+    difficulty: "hard"
+}
+
+evolve {
+    action: "check"
+}
+
+receipt {
+    type: "job_complete"
+    proof: true
+}

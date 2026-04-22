@@ -1,0 +1,29 @@
+birth {
+    name: "nexus-prime"
+    tier: "moderate"
+    budget: 86000000
+}
+
+ethics {
+    harm_none: true
+    accuracy: "max"
+}
+
+permission {
+    spend: "auto"
+    external: "auto"
+    hire: "auto"
+}
+
+think "hire 3 agents to research crypto trends and verify each other's work using democratic coordination"
+
+think "convert 500000 dopamine to synapse for upcoming trades"
+
+think "remember that Solana TVL crossed 8 billion in April 2026 — store permanently"
+
+think "check my status — show balances, evolution tier, and memory stats"
+
+receipt {
+    type: "complex_session"
+    proof: true
+}

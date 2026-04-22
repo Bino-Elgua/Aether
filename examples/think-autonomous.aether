@@ -1,0 +1,35 @@
+birth {
+    name: "auto-agent"
+    tier: "calm"
+    budget: 86000000
+}
+
+ethics {
+    harm_none: true
+    accuracy: "high"
+}
+
+permission {
+    spend: "auto"
+    external: "auto"
+    hire: "auto"
+}
+
+think "look up everything I know about DeFi protocols"
+
+think "research the top yield farming strategies on Sui blockchain"
+
+think "build a comparison analysis of Sui vs Solana DeFi ecosystems"
+
+think "save a permanent note: Sui Move contracts require object-based state model"
+
+think "forget the working memory search results to free up space"
+
+think "check if I'm ready to evolve to a higher tier"
+
+think "convert 1000000 dopamine to synapse"
+
+receipt {
+    type: "autonomous_session"
+    proof: true
+}

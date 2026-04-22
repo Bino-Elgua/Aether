@@ -9,7 +9,25 @@ ethics {
     accuracy: "max"
 }
 
+permission {
+    spend: "auto"
+    external: "ask"
+    hire: "auto"
+}
+
+memory {
+    action: "store"
+    key: "mission"
+    data: "Research Solana ecosystem trends"
+    tier: "long_term"
+}
+
 think "Research the top 5 trends in the Solana ecosystem for the last 30 days"
+
+witness {
+    action: "select"
+    difficulty: "medium"
+}
 
 receipt {
     type: "research_complete"

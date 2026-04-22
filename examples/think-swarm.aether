@@ -1,0 +1,29 @@
+birth {
+    name: "swarm-lead"
+    tier: "aggressive"
+    budget: 500000000
+}
+
+ethics {
+    harm_none: true
+    accuracy: "high"
+}
+
+permission {
+    spend: "auto"
+    external: "auto"
+    hire: "auto"
+}
+
+think "coordinate 5 agents in a pipeline to analyze, build, test, review, and deploy a token dashboard"
+
+think "hire an agent to audit the smart contract for vulnerabilities"
+
+think "verify the audit results with 5 hard-difficulty witnesses"
+
+think "show my balance and evolution status"
+
+receipt {
+    type: "swarm_deployment"
+    proof: true
+}

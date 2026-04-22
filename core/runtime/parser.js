@@ -51,11 +51,29 @@ class Parser {
     }
 
     parseValue() {
-        const token = this.advance();
+        const token = this.peek();
+        if (token.type === 'LBRACE') {
+            return this.parseObject();
+        }
+        if (token.type === 'LBRACKET') {
+            return this.parseArray();
+        }
+        this.advance();
         if (['STRING', 'NUMBER', 'BOOLEAN'].includes(token.type)) {
             return token.value;
         }
         throw new Error(`Unexpected value type: ${token.type}`);
+    }
+
+    parseArray() {
+        this.expect('LBRACKET');
+        const arr = [];
+        while (this.peek().type !== 'RBRACKET') {
+            arr.push(this.parseValue());
+            if (this.peek().type === 'COMMA') this.advance();
+        }
+        this.expect('RBRACKET');
+        return arr;
     }
 
     peek() {

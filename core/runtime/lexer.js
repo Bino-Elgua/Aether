@@ -12,6 +12,8 @@ class Lexer {
             [/^\}/, 'RBRACE'],
             [/^:/, 'COLON'],
             [/^,/, 'COMMA'],
+            [/^\[/, 'LBRACKET'],
+            [/^\]/, 'RBRACKET'],
             [/^"(?:[^"\\]|\\.)*"/, 'STRING'],
             [/^[0-9]+(?:\.[0-9]+)?/, 'NUMBER'],
             [/^(?:true|false)/, 'BOOLEAN'],
