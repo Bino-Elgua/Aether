@@ -10,6 +10,7 @@ module aether::escrow {
         human: address,
         agent: address,
         amount: Coin<SUI>,
+        witness_approved: bool,
         status: u8,
     }
 
@@ -28,13 +29,20 @@ module aether::escrow {
             human: tx_context::sender(ctx),
             agent: agent,
             amount: amount,
+            witness_approved: false,
             status: STATUS_LOCKED,
         };
         transfer::share_object(escrow);
     }
 
+    public entry fun submit_witness_approval(escrow: &mut Escrow, _witness_signature: vector<u8>) {
+        // In production, this would verify a ZK proof or MultiSig of valid witnesses
+        escrow.witness_approved = true;
+    }
+
     public entry fun release(escrow: &mut Escrow, ctx: &TxContext) {
         assert!(escrow.human == tx_context::sender(ctx), 0);
+        assert!(escrow.witness_approved == true, 1);
         escrow.status = STATUS_RELEASED;
         let amount = coin::into_balance(escrow.amount);
         transfer::public_transfer(coin::from_balance(amount, ctx), escrow.agent);
