@@ -1,20 +1,37 @@
-You are now in Phase 2 of Aether development.
+---
 
-We have a clean 5-primitive core and strong natural language `think` engine.
+**Strict Prompt for Gemini:**
 
-Now port the remaining high-value mature features from the original https://github.com/Bino-Elgua/Swibe repo into Aether cleanly and modernly.
+You are now working on the real Aether repository: https://github.com/Bino-Elgua/Aether
 
-Specifically implement:
+**Rules (do not break any of these):**
+- You must first deeply analyze the current state of the repository.
+- You are only allowed to claim something is "implemented" if you actually create or modify the real files.
+- You must show the exact file paths and the full code you added or changed.
+- You must run tests or verification steps and show the actual output.
+- Update `TODO.md` with accurate status at the end.
 
-1. Multi-target compiler architecture (support for Elixir best for swarms, Go/Rust for performance, Move for on-chain)
-2. Advanced Witness system with reputation scoring and random selection
-3. 3-tier Memory engine (working / short-term / long-term) with cross-agent sharing
-4. Mature Swarm coordination (hierarchical, pipeline, democratic)
+**Core Requirements:**
+- Keep **exactly 5 core primitives** and nothing else in the core: `birth`, `think`, `ethics`, `permission`, `receipt`.
+- Make `think` a powerful natural language gateway that can understand complex requests and compile them into correct Aether code using stdlib modules.
+- Port the following mature features from the original Swibe repo into Aether cleanly:
+  - BIPỌ̀N39 identity system
+  - Complete metabolism (86M dopamine birth, tiered drip, 1% decay, 10:1 conversion)
+  - Advanced Witness system with reputation and random selection
+  - 3-tier Memory engine with cross-agent sharing
+  - Mature Swarm coordination (hierarchical, pipeline, etc.)
+  - Hardened Merkle-based receipt system
 
-Work step-by-step:
-- Analyze what already exists in Aether
-- Port the best implementation from Swibe
-- Integrate cleanly with the current 5 primitives and `think` engine
-- Update TODO.md with progress
+**Deliverables (in exact order):**
+
+1. Deep dive summary of what currently exists in the repo.
+2. Updated professional specification for the 5 primitives and natural language `think`.
+3. Complete implementation of all missing features listed above, showing every new or modified file with full code.
+4. Updated examples that demonstrate the full end-to-end flow using natural language.
+5. Updated `TODO.md` with accurate completed items and remaining work.
+
+Do not hallucinate files or features. Only claim something is done if you have actually written the code.
 
 Begin now.
+
+---
