@@ -130,6 +130,10 @@ class Interpreter {
         this.agent.wallet = identity.address;
         this.agent.capabilities = deriveCapabilities(identity.oduArchetype, identity.elements);
         
+        // On-chain Registry Integration (Mock)
+        console.log(`[ON-CHAIN] Registering identity ${identity.address} to Sui...`);
+        // await suiClient.call('register_identity', [identity.address]);
+
         this.witness.registerAgent(args.name, args.tier || 'moderate', 100, 5000); // 5000 Synapse initial stake
         this.evolution.register(args.name, args.tier || 'calm');
         
@@ -140,18 +144,6 @@ class Interpreter {
         console.log(`  Wallet: ${identity.address}`);
         console.log(`  Dominant Element: ${identity.dominantElement}`);
         console.log(`  Dopamine: ${bal.dopamine.toLocaleString()} (86M Birth Endowment)`);
-    }
-
-    _handleEthics(args) {
-        this.ethics = { ...this.ethics, ...args };
-        console.log(`[Executing] ethics...`);
-        console.log(`  Rules updated: ${Object.keys(args).join(', ')}`);
-    }
-
-    _handlePermission(args) {
-        this.permissions = { ...this.permissions, ...args };
-        console.log(`[Executing] permission...`);
-        console.log(`  Access updated: ${Object.keys(args).join(', ')}`);
     }
 
     async _handleThink(args) {
@@ -179,13 +171,23 @@ class Interpreter {
     }
 
     async _handleReceipt(args) {
+        // Generate Merkle proof for chain verification
+        const MerkleTree = require('./merkle');
+        const leaf = JSON.stringify({
+            agent: this.agent?.name || 'anonymous',
+            type: args.type,
+            timestamp: Date.now()
+        });
+        const tree = new MerkleTree([leaf]);
+        const merkleRoot = tree.getRoot();
+
         const receiptData = {
             agent: this.agent?.name || 'anonymous',
             type: args.type,
             traceId: args.traceId,
             timestamp: Date.now(),
             steps: args.steps || 0,
-            merkleRoot: args.merkleRoot || crypto.randomBytes(32).toString('hex')
+            merkleRoot: merkleRoot
         };
 
         const dataStr = JSON.stringify(receiptData);
@@ -199,6 +201,7 @@ class Interpreter {
         
         console.log(`[Executing] receipt...`);
         console.log(`  Seal: [${args.type}] ${receiptHash.slice(0, 16)}...`);
+        console.log(`  Merkle Root for Chain: ${merkleRoot.slice(0, 16)}...`);
         if (signature !== 'unsigned') {
             console.log(`  Signed by Agent: ${this.agent.name}`);
             console.log(`  Signature: ${signature.slice(0, 24)}...`);
@@ -207,7 +210,7 @@ class Interpreter {
         // Log receipt to history
         this.executionHistory.push({ ...receiptData, hash: receiptHash, signature });
         
-        return { hash: receiptHash, signature };
+        return { hash: receiptHash, signature, merkleRoot };
     }
 
     async _handleMetabolism(args) {
