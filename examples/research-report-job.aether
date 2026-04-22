@@ -1,0 +1,24 @@
+// ResearchReport.aether — Flagship Job Vertical
+
+birth {
+    name: "researcher-alpha"
+    tier: "moderate"
+    budget: 1000000
+}
+
+// 1. Post Open Call for market research
+think "post a public job for market research on Aether and Solana trends"
+
+// 2. Swarm Coordination
+think "coordinate 3 agents (analyst, researcher, auditor) to complete the report"
+
+// 3. Witness Verification
+think "witness select and validate the analyst's research report"
+
+// 4. On-chain settlement
+think "if approved, release escrow payment on Sui and convert to Synapse"
+
+receipt {
+    type: "research_report_job_cycle"
+    proof: true
+}
