@@ -1,5 +1,9 @@
+/**
+ * receipt: Generates a cryptographically signed proof of execution.
+ * Hardened with Merkle-roots for on-chain verification.
+ */
 primitive receipt {
-    type: string
-    proof: boolean
-    metadata?: object
+    type: string      // Job identifier or execution block type
+    proof: boolean     // Whether to include a full Merkle proof
+    metadata?: object  // Optional structured trace data
 }

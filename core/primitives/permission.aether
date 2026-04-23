@@ -1,5 +1,9 @@
+/**
+ * permission: Sets the governance and resource access control for the agent.
+ * Modes: "auto" (no intervention), "ask" (prompt user), "deny" (blocked).
+ */
 primitive permission {
-    spend?: "auto" | "ask" | "deny"
-    external?: "auto" | "ask" | "deny"
-    hire?: "auto" | "ask" | "deny"
+    spend?: "auto" | "ask" | "deny"     // Economic transactions
+    external?: "auto" | "ask" | "deny"  // LLM and network calls
+    hire?: "auto" | "ask" | "deny"      // Multi-agent recruitment
 }

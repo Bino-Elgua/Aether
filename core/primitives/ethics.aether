@@ -1,5 +1,9 @@
+/**
+ * ethics: Defines the immutable behavioral and moral boundaries for the agent.
+ * These rules are checked by the interpreter before any plan execution.
+ */
 primitive ethics {
-    harm_none?: boolean
-    accuracy?: "max" | "high" | "medium"
-    restrictions?: string[]
+    harm_none?: boolean        // If true, blocks actions classified as harmful
+    accuracy?: "max" | "high"  // Required confidence level for reasoning
+    restrictions?: string[]    // Explicit domain-specific blacklists
 }

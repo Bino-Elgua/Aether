@@ -1,4 +1,8 @@
+/**
+ * think: The cognitive entry point of the Aether language.
+ * Accepts natural language prompts and compiles them into executable plans.
+ */
 primitive think {
-    prompt: string
-    model?: string
+    prompt: string    // Natural language request or structured directive
+    model?: string     // Preferred LLM model for reasoning (optional)
 }

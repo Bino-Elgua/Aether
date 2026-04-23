@@ -37,6 +37,7 @@ class Interpreter {
         this.swarm = null;
         this.evolution = new EvolutionEngine();
         this._thinkConfig = config.think || {};
+        this._latestEscrowId = null;
 
         this.gateway = new Gateway(this);
         this.executionHistory = [];
@@ -268,6 +269,9 @@ class Interpreter {
         const { action, difficulty, jobId, witnessId, approved, notes } = args;
         console.log(`[Executing] witness.${action}...`);
         
+        // Map 'self' or missing ID to current agent name
+        const effectiveWitnessId = (witnessId === 'self' || !witnessId) ? this.agent.name : witnessId;
+
         switch (action) {
             case 'select':
                 const witnesses = this.witness.selectWitnesses(difficulty || 'medium', this.agent.name);
@@ -275,7 +279,7 @@ class Interpreter {
                 return witnesses;
             case 'validate':
                 const record = this.witness.submitValidation(
-                    witnessId || 'self',
+                    effectiveWitnessId,
                     jobId || `job_${Date.now()}`,
                     this.agent.name,
                     approved !== false,
@@ -348,6 +352,7 @@ class Interpreter {
                     amount || 50000,
                     job || 'task'
                 );
+                this._latestEscrowId = escrow.id;
                 console.log(`  Escrow: ${escrow.id} (${escrow.amount} S)`);
                 return escrow;
             case 'post_open_call':
@@ -356,15 +361,22 @@ class Interpreter {
                     amount || 50000,
                     job || 'open task'
                 );
+                this._latestEscrowId = call.id; // Could be a call too
                 console.log(`  Open Call: ${call.id} posted`);
                 return call;
             case 'accept_open_call':
                 const newEscrow = this.escrow.acceptOpenCall(callId, this.agent.name);
+                this._latestEscrowId = newEscrow.id;
                 console.log(`  Accepted: ${callId} -> ${newEscrow.id}`);
                 return newEscrow;
             case 'release':
-                const released = this.escrow.release(escrowId);
-                console.log(`  Released: ${escrowId}`);
+                const targetId = (escrowId === 'latest' || !escrowId || isNaN(parseInt(escrowId.split('_')[1]))) 
+                    ? this._latestEscrowId 
+                    : escrowId;
+                
+                if (!targetId) throw new Error("Release Failed: No active escrow ID found.");
+                const released = this.escrow.release(targetId);
+                console.log(`  Released: ${targetId}`);
                 return released;
             default:
                 throw new Error(`Unknown hire action: ${action}`);

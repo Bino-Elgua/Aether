@@ -8,7 +8,8 @@ class Lexer {
     tokenize() {
         const tokenSpecs = [
             [/^\s+/, null], // Whitespace
-            [/^\/\/.*/, null], // Comments
+            [/^\/\/.*/, null], // Single-line comments
+            [/^\/\*[\s\S]*?\*\//, null], // Block comments
             [/^\{/, 'LBRACE'],
             [/^\}/, 'RBRACE'],
             [/^:/, 'COLON'],

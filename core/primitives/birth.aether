@@ -1,6 +1,10 @@
+/**
+ * birth: Initializes a new sovereign digital agent.
+ * Sets the permanent identity (BIPỌ̀N39) and initial economic endowment.
+ */
 primitive birth {
-    name: string
-    tier: "calm" | "moderate" | "aggressive"
-    budget?: number
-    passphrase?: string
+    name: string                                  // Human-readable identifier
+    tier: "calm" | "moderate" | "aggressive"      // Operational intensity & drip rate
+    budget?: number                               // Initial SUI/Aether budget (optional)
+    passphrase?: string                           // Security salt for BIPỌ̀N39 derivation
 }

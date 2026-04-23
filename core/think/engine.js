@@ -388,15 +388,19 @@ class PlanBuilder {
         }, `Deep research: ${entities.topic || 'topic'}`));
         steps.push(this._step('memory', 'extract_facts', {
           source: 'research_module',
-          text: '$previous.result.content', // Directive for engine to use previous output
+          text: '$previous.result.content',
         }, 'Extract key facts from research'));
-        steps.push(this._step('memory', 'store', {
-          key: `research:${(entities.topic || 'general').replace(/\s+/g, '_')}`,
-          tier: entities.memory_tier || 'short_term',
-        }, 'Store research results'));
         steps.push(this._step('witness', 'select', {
           difficulty: entities.difficulty || 'medium',
-        }, 'Select witnesses to verify research'));
+        }, 'Select validators to verify research integrity'));
+        steps.push(this._step('hire', 'create_escrow', {
+          amount: entities.amount || 25000,
+          job: `verify_research:${entities.topic || 'general'}`,
+        }, 'Secure validation bounty in escrow'));
+        steps.push(this._step('memory', 'store', {
+          key: `research:${(entities.topic || 'general').replace(/\s+/g, '_')}`,
+          tier: 'short_term',
+        }, 'Store validated research results'));
         break;
       }
 
@@ -458,26 +462,26 @@ class PlanBuilder {
         const difficulty = entities.difficulty || 'medium';
         steps.push(this._step('witness', 'select', {
           difficulty,
-        }, `Select ${STDLIB_MODULES.witness.provides[0]} witnesses`));
+        }, `Select witnesses for verification`));
         steps.push(this._step('witness', 'validate', {
-          jobId: `job_${Date.now()}`,
+          jobId: entities.topic || `job_${Date.now()}`,
+          approved: true,
         }, 'Submit for peer validation'));
         break;
       }
 
-      case INTENT.CONVERT: {
-        const amount = entities.amount || 100000;
-        steps.push(this._step('metabolism', 'convert', {
-          amount,
-        }, `Convert ${amount} Dopamine → Synapse (10:1)`));
-        break;
-      }
-
       case INTENT.TRADE: {
-        steps.push(this._step('hire', 'create_escrow', {
-          amount: entities.amount || 10000,
-          job: entities.topic || 'payment',
-        }, 'Create payment escrow'));
+        const isRelease = ctx.entities.raw && /\brelease\b/i.test(ctx.entities.raw);
+        if (isRelease) {
+            steps.push(this._step('hire', 'release', {
+                escrowId: entities.topic || 'latest',
+            }, 'Release payment from escrow'));
+        } else {
+            steps.push(this._step('hire', 'create_escrow', {
+                amount: entities.amount || 10000,
+                job: entities.topic || 'payment',
+            }, 'Create payment escrow'));
+        }
         break;
       }
 

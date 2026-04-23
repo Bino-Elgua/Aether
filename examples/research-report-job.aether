@@ -1,26 +1,43 @@
-// Phase 7: Production-Ready Research & Report Job
-// This example demonstrates a full, verifiable Aether job cycle.
+/**
+ * Aether Flagship Example: Autonomous Research & Report
+ * 
+ * Demonstrates the full economic and cognitive lifecycle:
+ * 1. Birth & Identity Initialization
+ * 2. Natural Language Intent Processing
+ * 3. Multi-agent Swarm Coordination
+ * 4. Distributed Peer Verification (Witness)
+ * 5. Secure On-chain Settlement (Escrow)
+ */
 
 birth {
-    name: "nexus-prime"
+    name: "nexus-alpha"
     tier: "moderate"
-    budget: 1000000
-    passphrase: "ritual-sovereign-alpha-sequence"
+    passphrase: "sovereign-agent-ritual-dawn"
 }
 
-// 1. Post Open Call for market research
-think "post a public job for market research on Aether and Solana ecosystem trends with a budget of 50000"
+ethics {
+    harm_none: true,
+    accuracy: "high"
+}
 
-// 2. Swarm Coordination (Hierarchical)
-think "coordinate 3 agents (analyst, researcher, auditor) to execute the research task"
+permission {
+    spend: "auto",
+    hire: "auto"
+}
 
-// 3. Witness Verification & Reputation Loop
-think "witness select 4 agents to peer-review the research report and validate job completion"
+// Step 1: Knowledge Gathering
+think "research the current trends in autonomous agent coordination for 2026"
 
-// 4. On-chain Settlement
-think "if validated, release SUI escrow payment and convert to Dopamine for the researcher"
+// Step 2: Synthesis via Swarm
+think "coordinate a team of 3 specialized agents to synthesize a technical report from the findings"
+
+// Step 3: Peer Review & Quality Assurance
+think "select 4 witnesses to validate the technical accuracy of the synthesized report"
+
+// Step 4: Final Settlement & Reward
+think "on successful validation, release the SUI escrow payment and award reputation points to participants"
 
 receipt {
-    type: "production_research_report_cycle"
+    type: "production_research_cycle_v1",
     proof: true
 }
